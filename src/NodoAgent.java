@@ -1,5 +1,6 @@
 import jade.core.Agent;
 import jade.core.AID;
+import java.io.File;
 import jade.core.behaviours.*;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
@@ -28,6 +29,12 @@ public class NodoAgent extends Agent {
             System.out.println("No file name specified");
             doDelete();
         }
+
+        File folder = new File("./Descargas_JADE");
+        if (!folder.exists()) { 
+            folder.mkdir();
+        }
+
     }
 
     // Put agent clean-up operations here

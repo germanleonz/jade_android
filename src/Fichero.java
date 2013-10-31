@@ -9,7 +9,7 @@ public class Fichero implements Serializable {
     // Permisos que posee el archivo
     private int permisos;
     // Usuarios que poseen el archivo
-    private String tenantList ;
+    private String holders ;
 
     /*
      Metodo Constructor
@@ -34,12 +34,12 @@ public class Fichero implements Serializable {
         this.permisos = permisos;
     }
 
-    public String getTenantList() {
-        return tenantList;
+    public String getHolders() {
+        return holders;
     }
 
-    public void setTenantList(String tenantList) {
-        this.tenantList = tenantList;
+    public void setHolders(String tenantList) {
+        this.holders = tenantList;
     }
   
 }
