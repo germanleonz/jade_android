@@ -1,4 +1,4 @@
-
+import java.util.LinkedList;
 import java.io.Serializable;
 
 
@@ -9,7 +9,7 @@ public class Fichero implements Serializable {
     // Permisos que posee el archivo
     private int permisos;
     // Usuarios que poseen el archivo
-    private String holders ;
+    private LinkedList holders ;
 
     /*
      Metodo Constructor
@@ -34,11 +34,11 @@ public class Fichero implements Serializable {
         this.permisos = permisos;
     }
 
-    public String getHolders() {
+    public LinkedList getHolders() {
         return holders;
     }
 
-    public void setHolders(String tenantList) {
+    public void setHolders(LinkedList tenantList) {
         this.holders = tenantList;
     }
   

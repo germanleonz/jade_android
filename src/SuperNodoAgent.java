@@ -75,7 +75,13 @@ public class SuperNodoAgent extends Agent {
 				DFAgentDescription[] result = DFService.search(myAgent, template); 
 				//Buscamos todos los superNodos
 				AID[] superNodos = new AID[result.length];
-				superNodos[0] = result[0].getName();
+
+				for (int i = 0; i < result.length; ++i) {
+					if (!result[i].getName().getName().contains(getAID().getName())){
+	             	 superNodos[0] = result[i].getName();
+					break;
+	            	}
+	            }
 				ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
 				// Le enviamos al primer super nodo el mensaje indicandole que acabo de nacer
 				cfp.setContent("NuevoNodo");
