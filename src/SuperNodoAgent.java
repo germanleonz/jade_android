@@ -39,6 +39,7 @@ public class SuperNodoAgent extends Agent {
 		addBehaviour(new Propagate());
 		addBehaviour(new Actualizar());
 		addBehaviour(new Nacimiento());
+		addBehaviour(new WasBorn());
 		
 		
 	}
@@ -82,7 +83,7 @@ public class SuperNodoAgent extends Agent {
 					break;
 	            	}
 	            }
-				ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
+				ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
 				// Le enviamos al primer super nodo el mensaje indicandole que acabo de nacer
 				cfp.setContent("NuevoNodo");
 				cfp.addReceiver(superNodos[0]);
@@ -139,16 +140,16 @@ public class SuperNodoAgent extends Agent {
 		}
 	}
 
-	/* 	
-		Metodo Propagate
-		Este metodo se encarga de actualizar la Tabla de Hash solo en caso de que la solicitud 
-		venga de un cliente y propagarla a los otros superNodos. En caso contrario, es que nacio 
-		un nuevo nodo y requiere la tabla de hash. 
+
+	/*
+		Metodo wasBorn
+		Este metodo se encarga de recibir los mensajes que provienen de los nodos una vez que
+		este es creado con el fin de enviarle el catalogo de los recursos
 	*/
-	private class Propagate extends CyclicBehaviour {
+	private class WasBorn extends CyclicBehaviour {
 		public void action() {
-			// Recibimos el mensaje que puede venir de otro SuperNodo o de un Nodo
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+			// Recibimos el mensaje que puede venir de otro SuperNodo 
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
 			ACLMessage msg = myAgent.receive(mt);
 
 			if (msg != null) {
@@ -162,30 +163,54 @@ public class SuperNodoAgent extends Agent {
 						// Le enviamos en el mensaje el catalogo
 						reply.setContentObject(catalogo);
 						myAgent.send(reply);
-
-					}else{
-						/** Espacio para  actualizar */
-						DFAgentDescription template = new DFAgentDescription();
-						ServiceDescription sd = new ServiceDescription();
-						sd.setType("supernodo");
-						template.addServices(sd);
-						// Buscamos todos los agentes que posean el servicio SuperNodo
-						DFAgentDescription[] result = DFService.search(myAgent, template); 
-						AID[] superNodos = new AID[result.length];
-
-						//Por cada superNodo le enviamos la nueva Tabla de Hash
-						for (int i = 0; i < result.length; ++i) {
-							superNodos[i] = result[i].getName();
-							ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
-							cfp.addReceiver(superNodos[i]);
-							cfp. setContentObject(catalogo);
-							cfp.setConversationId("propagate");
-							cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
-							myAgent.send(cfp);
-							System.out.println(superNodos[i].getName());
-						}
-					
 					}
+					
+				}catch (Exception io){
+					io.printStackTrace();
+				}
+			}else {
+				block();
+			}
+		}
+	}
+
+
+	/* 	
+		Metodo Propagate
+		Este metodo se encarga de actualizar la Tabla de Hash ya que el cliente tiene
+		un nuevo recurso que desea compartir
+	*/
+	private class Propagate extends CyclicBehaviour {
+		public void action() {
+			// Recibimos el mensaje que puede venir de un Nodo
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+			ACLMessage msg = myAgent.receive(mt);
+
+			if (msg != null) {
+				
+				try {
+					
+					/** Espacio para  actualizar */
+					DFAgentDescription template = new DFAgentDescription();
+					ServiceDescription sd = new ServiceDescription();
+					sd.setType("supernodo");
+					template.addServices(sd);
+					// Buscamos todos los agentes que posean el servicio SuperNodo
+					DFAgentDescription[] result = DFService.search(myAgent, template); 
+					AID[] superNodos = new AID[result.length];
+
+					//Por cada superNodo le enviamos la nueva Tabla de Hash
+					for (int i = 0; i < result.length; ++i) {
+						superNodos[i] = result[i].getName();
+						ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
+						cfp.addReceiver(superNodos[i]);
+						cfp. setContentObject(catalogo);
+						cfp.setConversationId("propagate");
+						cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
+						myAgent.send(cfp);
+						System.out.println(superNodos[i].getName());
+					}
+					
 				}catch (FIPAException fe) {
 					fe.printStackTrace();
 				}catch (Exception io){
