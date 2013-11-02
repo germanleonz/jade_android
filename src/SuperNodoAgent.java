@@ -318,6 +318,7 @@ public class SuperNodoAgent extends Agent {
         private int step = 0; 
         MessageTemplate mt;
         ACLMessage msg;
+        AID nuevo;
 
         public void action() {
 
@@ -329,6 +330,7 @@ public class SuperNodoAgent extends Agent {
                         // Mensaje recibido.
                         // Archivo pedido
                         try {
+                            nuevo = msg.getSender();
                             // En el mensaje se encuentra la tabla de Hash
                             Hashtable contenido = (Hashtable)msg.getContentObject();
                             // Esta sera nuestra nueva tabla de hash
@@ -345,6 +347,7 @@ public class SuperNodoAgent extends Agent {
                     break;
                 case 1:
                     msg = new ACLMessage(ACLMessage.INFORM);
+                    msg.addReceiver(nuevo);
                     msg.setConversationId("solicitud lista supernodos");
                     myAgent.send(msg);
 
