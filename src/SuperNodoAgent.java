@@ -27,7 +27,7 @@ public class SuperNodoAgent extends Agent {
        */
     protected void setup() {
         catalogo = new Hashtable();
-        catalogo.put("archivo1", "nodo1");
+        //catalogo.put("archivo1", "nodo1");
 
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
@@ -49,8 +49,6 @@ public class SuperNodoAgent extends Agent {
         addBehaviour(new WasBorn());
         addBehaviour(new DescargaExitosa());
         addBehaviour(new DescargaNoExitosa());
-
-
     }
 
     /*
