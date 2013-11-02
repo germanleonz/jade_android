@@ -34,13 +34,21 @@ public class NodoAgent extends Agent {
         if (!folder.exists()) { 
             folder.mkdir();
         }
-
+        
     }
 
     // Put agent clean-up operations here
     protected void takeDown() {
         // Printout a dismissal message
         System.out.println("Nodo-agent "+getAID().getName()+" terminating.");
+    }
+
+    //Funcion privada que reviza si los nodos aun estan activos
+    //No esta funcionando
+    private void getSuperNode(){
+        for(int i=0;i < superNodos.length; ++i){
+            System.out.println("El HAP"+this.superNodos[0].getHap());
+        }
     }
 
     private class SeekSuperNodes extends Behaviour {
@@ -61,6 +69,7 @@ public class NodoAgent extends Agent {
           catch (FIPAException fe) {
             fe.printStackTrace();
           }
+
         }
 
         public boolean done() {
@@ -111,5 +120,6 @@ public class NodoAgent extends Agent {
             }
             return (fileHolder != null);
         }
-    }  // End of inner class AskForHolders
+    }
+
 }

@@ -194,10 +194,32 @@ public class SuperNodoAgent extends Agent {
 			ACLMessage msg = myAgent.receive(mt);
 
 			if (msg != null) {
-				
+				Fichero arch;
+				Fichero arch2;
 				try {
-					
+					if(msg.getContent().equalsIgnoreCase("NuevoArchivo")){
 					/** Espacio para  actualizar */
+					//Nuevo Archivo se recibe desde el cliente y se guarda
+					
+					arch = (Fichero)msg.getContentObject();
+					catalogo.put(arch.getNombre(),arch);
+				}else if(msg.getContent().equalsIgnoreCase("NuevoPermiso")){
+					//Cambio de Permisos de un archivo se recibe el archivo desde el cliente
+					arch = (Fichero) msg.getContentObject();
+					arch2 = (Fichero) catalogo.get(arch.getNombre());
+					//Actualizar la lista de holders
+					arch.setHolders(arch2.getHolders());
+					catalogo.put(arch.getNombre(),arch);
+				}else{
+					//Nuevo nodo con el archivo
+    				arch = (Fichero) msg.getContentObject();
+					arch2 = (Fichero) catalogo.get(arch.getNombre());
+					arch2.setAHolder(arch.getOwner());
+					catalogo.put(arch.getNombre(),arch2);
+				}
+
+
+
 					DFAgentDescription template = new DFAgentDescription();
 					ServiceDescription sd = new ServiceDescription();
 					sd.setType("supernodo");

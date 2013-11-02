@@ -7,15 +7,18 @@ public class Fichero implements Serializable {
     // Usuario con el archivo original
     private String owner ;
     // Permisos que posee el archivo
-    private int permisos;
+    private boolean permisos;
     // Usuarios que poseen el archivo
     private LinkedList holders ;
+    // Nombre del archivo
+    private String nombre;
+
 
     /*
      Metodo Constructor
      */
     public Fichero() {
-        permisos = 0;
+        permisos = true;
     }
 
     public String getOwner() {
@@ -26,11 +29,11 @@ public class Fichero implements Serializable {
         this.owner = owner;
     }
 
-    public int getPermisos() {
+    public boolean getPermisos() {
         return permisos;
     }
 
-    public void setPermisos(int permisos) {
+    public void setPermisos(boolean permisos) {
         this.permisos = permisos;
     }
 
@@ -40,6 +43,18 @@ public class Fichero implements Serializable {
 
     public void setHolders(LinkedList tenantList) {
         this.holders = tenantList;
+    }
+
+    public void setAHolder(String holder){
+        this.holders.addLast(holder);
+    }
+
+    public String getNombre(){
+        return nombre;
+    }
+
+    public void setNombre(String nombre){
+        this.nombre = nombre;
     }
   
 }
