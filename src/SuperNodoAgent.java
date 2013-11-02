@@ -219,7 +219,7 @@ public class SuperNodoAgent extends Agent {
                             io.printStackTrace();
                         }
                     } else {
-                        block()
+                        block();
                     }
             }
         }
