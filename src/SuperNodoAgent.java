@@ -332,11 +332,11 @@ public class SuperNodoAgent extends Agent {
 
                     break;
                 case 1:
-                    ACLMessage reply = msg.createReply();
-                    reply.setPerformative(ACLMessage.INFORM);
-                    reply.setConversationId("listaSuperNodos");
-                    reply.setContent("listaSuperNodos");
-                    myAgent.send(reply);
+                    msg = new ACLMessage();
+                    msg.setPerformative(ACLMessage.INFORM);
+                    msg.setConversationId("listaSuperNodos");
+                    msg.setContent("listaSuperNodos");
+                    myAgent.send(msg);
                     block();
 
                     mt = MessageTemplate.and(
