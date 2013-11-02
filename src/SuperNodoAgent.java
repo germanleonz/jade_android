@@ -103,7 +103,7 @@ public class SuperNodoAgent extends Agent {
                cfp = new ACLMessage(ACLMessage.INFORM);
                cfp.setConversationId("agregarSuperNodo");
                cfp.setContent("NuevoNodo");
-               for (int i = 0; i < superNodos.length(); i++){
+               for (int i = 0; i < superNodos.length; i++){
                     cfp.addReceiver(superNodos[i]);
                }
                cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
@@ -334,11 +334,13 @@ public class SuperNodoAgent extends Agent {
             mt = MessageTemplate.and(
                     MessageTemplate.MatchPerformative(ACLMessage.INFORM),
                     MessageTemplate.MatchConversationId("listaSuperNodos"));
-			ACLMessage msg = myAgent.receive(mt);
+			msg = myAgent.receive(mt);
 			if (msg != null) {
                 try {
                     superNodos = (ArrayList<AID>) msg.getContentObject();
                     System.out.println("Lista de super nodos Actualizada\n");
+                } catch (Exception e){
+                    e.printStackTrace();
                 }
             }
 
