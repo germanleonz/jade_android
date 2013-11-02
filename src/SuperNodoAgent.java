@@ -18,6 +18,8 @@ public class SuperNodoAgent extends Agent {
 	// Se almacena los nodos y su confiabilidad
 	private Hashtable nodos;
 
+    private ArrayList<AID> superNodos;
+
 	/*
 		Metodo setup
 		Este metodo define la inicializacion de un agente que prestara
@@ -91,11 +93,21 @@ public class SuperNodoAgent extends Agent {
 	            	}
 	            }
 				ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+				cfp.setConversationId("nacimiento");
 				// Le enviamos al primer super nodo el mensaje indicandole que acabo de nacer
 				cfp.setContent("NuevoNodo");
 				cfp.addReceiver(superNodos[0]);
 				cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
 				myAgent.send(cfp);
+
+               cfp = new ACLMessage(ACLMessage.INFORM);
+               cfp.setConversationId("agregarSuperNodo");
+               cfp.setContent("NuevoNodo");
+               for (int i = 0; i < superNodos.length(); i++){
+                    cfp.addReceiver(superNodos[i]);
+               }
+               cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
+               myAgent.send(cfp);
 
 			}
 			catch (FIPAException fe) {
@@ -156,16 +168,18 @@ public class SuperNodoAgent extends Agent {
 	private class WasBorn extends CyclicBehaviour {
 		public void action() {
 			// Recibimos el mensaje que puede venir de otro SuperNodo 
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+			MessageTemplate mt =  MessageTemplate.and(  
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("nacimiento"));
 			ACLMessage msg = myAgent.receive(mt);
-
+            ACLMessage reply;
 			if (msg != null) {
 				
 				try {
 					if(msg.getContent().equalsIgnoreCase("NuevoNodo")){
 						System.out.println("Existe un nuevo nodo!\n");
 						// Caso en el que un SuperNodo requiere la Tabla de Hash
-						ACLMessage reply = msg.createReply();
+						reply = msg.createReply();
 						reply.setPerformative(ACLMessage.PROPAGATE);
 						// Le enviamos en el mensaje el catalogo
 						reply.setContentObject(catalogo);
@@ -178,8 +192,42 @@ public class SuperNodoAgent extends Agent {
 			}else {
 				block();
 			}
+        
+           block();
+            mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("listaSuperNodos"));
+            msg = myAgent.receive(mt);
+            if (msg != null) {
+                try {
+                    reply = msg.createReply();
+                    reply.setPerformative(ACLMessage.PROPAGATE);
+                    reply.setContentObject(superNodos);
+                    reply.setConversationId("listaSuperNodos");
+                    myAgent.send(reply);
+                } catch (Exception io) {
+                    io.printStackTrace();
+                }
+            }
 		}
 	}
+
+    private class addSuperNode extends CyclicBehaviour {
+        public void action() {
+			MessageTemplate mt =  MessageTemplate.and(  
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("agregarSuperNodo"));
+			ACLMessage msg = myAgent.receive(mt);
+            if (msg != null) {
+                try {
+                    AID nuevo = msg.getSender();
+                    superNodos.add(nuevo);
+                } catch (Exception io) {
+                    io.printStackTrace();
+                }
+            }
+        }
+    }
 
 
 	/* 	
@@ -276,6 +324,24 @@ public class SuperNodoAgent extends Agent {
 			} else {
 				block();
 			}
+            ACLMessage reply = msg.createReply();
+            reply.setPerformative(ACLMessage.INFORM);
+            reply.setConversationId("listaSuperNodos");
+            reply.setContent("listaSuperNodos");
+            myAgent.send(reply);
+            block();
+
+            mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("listaSuperNodos"));
+			ACLMessage msg = myAgent.receive(mt);
+			if (msg != null) {
+                try {
+                    superNodos = (ArrayList<AID>) msg.getContentObject();
+                    System.out.println("Lista de super nodos Actualizada\n");
+                }
+            }
+
 		}
 	}
 
