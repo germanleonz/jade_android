@@ -81,9 +81,9 @@ public class SuperNodoAgent extends Agent {
             sd.setType("supernodo");
             template.addServices(sd);
             try {
-                System.out.println("Acabo de Nacer!\n");
+                //Buscamos todos los superNodos para agregarlos localmente a mi lista
+                System.out.println("Agregando supernodos a mi lista local");
                 DFAgentDescription[] result = DFService.search(myAgent, template); 
-                //Buscamos todos los superNodos
                 superNodos = new ArrayList<AID>(result.length);
 
                 for (int i = 0; i < result.length; ++i) {
@@ -92,17 +92,19 @@ public class SuperNodoAgent extends Agent {
                         break;
                     }
                 }
+
+                // Le solicitamos al primer supernodo el catalogo
+                System.out.println("Solicitando catalogo al primer supernodo.");
                 ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
-                cfp.setConversationId("nacimiento");
-                // Le enviamos al primer super nodo el mensaje indicandole que acabo de nacer
-                cfp.setContent("NuevoNodo");
+                cfp.setConversationId("solicitud catalogo");
                 cfp.addReceiver(superNodos.get(0));
                 cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
                 myAgent.send(cfp);
 
+                //  
+                System.out.println("Notificando a todos los supernodos que llegue.");
                 cfp = new ACLMessage(ACLMessage.INFORM);
-                cfp.setConversationId("agregarSuperNodo");
-                cfp.setContent("NuevoNodo");
+                cfp.setConversationId("notificando nacimiento");
                 for (AID superNodo: superNodos) {
                     if (!superNodo.getName().contains(getAID().getName())){
                         cfp.addReceiver(superNodo);
@@ -167,47 +169,53 @@ public class SuperNodoAgent extends Agent {
        este es creado con el fin de enviarle el catalogo de los recursos
        */
     private class WasBorn extends CyclicBehaviour {
+        private int step = 0;
+        MessageTemplate mt;
+        ACLMessage msg;
+        ACLMessage reply;
+
         public void action() {
             // Recibimos el mensaje que puede venir de otro SuperNodo 
-            MessageTemplate mt =  MessageTemplate.and(  
-                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
-                    MessageTemplate.MatchConversationId("nacimiento"));
-            ACLMessage msg = myAgent.receive(mt);
-            ACLMessage reply;
-            if (msg != null) {
 
-                try {
-                    if(msg.getContent().equalsIgnoreCase("NuevoNodo")){
-                        System.out.println("Existe un nuevo nodo!\n");
-                        // Caso en el que un SuperNodo requiere la Tabla de Hash
+            switch (step) { 
+                case (0):
+                    mt =  MessageTemplate.and(  
+                            MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                            MessageTemplate.MatchConversationId("solicitud catalogo"));
+                    msg = myAgent.receive(mt);
+                    if (msg != null) {
+                        try {
+                            // Caso en el que un SuperNodo requiere la Tabla de Hash
+                            System.out.println("Respondiendo a solicitud del catalogo");
+                            reply = msg.createReply();
+                            reply.setPerformative(ACLMessage.PROPAGATE);
+                            reply.setContentObject(catalogo);
+                            myAgent.send(reply);
+                            step = 1;
+                        }catch (Exception io){
+                            io.printStackTrace();
+                        }
+                    } else {
+                        block();
+                    }
+                    break;
+                case (1):
+                    mt = MessageTemplate.and(
+                            MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                            MessageTemplate.MatchConversationId("solicitud lista supernodos"));
+                    msg = myAgent.receive(mt);
+                    try {
+                        System.out.println("Enviando mi lista de supernodos");
+                        System.out.println("Mi Lista de SuperNodos es: " + superNodos.toString());
                         reply = msg.createReply();
                         reply.setPerformative(ACLMessage.PROPAGATE);
-                        // Le enviamos en el mensaje el catalogo
-                        reply.setContentObject(catalogo);
+                        reply.setContentObject(superNodos);
+                        reply.setConversationId("solicitud lista supernodos");
                         myAgent.send(reply);
+                        step = 2;
+                    } catch (Exception io) {
+                        io.printStackTrace();
                     }
-
-                }catch (Exception io){
-                    io.printStackTrace();
-                }
-            }else {
-                block();
-            }
-
-            block();
-            mt = MessageTemplate.and(
-                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
-                    MessageTemplate.MatchConversationId("listaSuperNodos"));
-            msg = myAgent.receive(mt);
-            try {
-                reply = msg.createReply();
-                reply.setPerformative(ACLMessage.PROPAGATE);
-                System.out.println("Lista " + superNodos.toString());
-                reply.setContentObject(superNodos);
-                reply.setConversationId("listaSuperNodos");
-                myAgent.send(reply);
-            } catch (Exception io) {
-                io.printStackTrace();
             }
         }
     }
@@ -305,17 +313,19 @@ public class SuperNodoAgent extends Agent {
        el mensaje
        */
     private class Actualizar extends CyclicBehaviour {
-        int step = 0; 
-        public void action() {
+        private int step = 0; 
+        MessageTemplate mt;
+        ACLMessage msg;
 
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.PROPAGATE);
-            ACLMessage msg = myAgent.receive(mt);
+        public void action() {
 
             switch(step){
                 case 0: 
+                    mt  = MessageTemplate.MatchPerformative(ACLMessage.PROPAGATE);
+                    msg = myAgent.receive(mt);
                     if (msg != null) {
                         // Mensaje recibido.
-                        //Archivo pedido
+                        // Archivo pedido
                         try {
                             // En el mensaje se encuentra la tabla de Hash
                             Hashtable contenido = (Hashtable)msg.getContentObject();
@@ -332,20 +342,19 @@ public class SuperNodoAgent extends Agent {
 
                     break;
                 case 1:
-                    msg = new ACLMessage();
-                    msg.setPerformative(ACLMessage.INFORM);
-                    msg.setConversationId("listaSuperNodos");
-                    msg.setContent("listaSuperNodos");
+                    msg = new ACLMessage(ACLMessage.INFORM);
+                    msg.setConversationId("solicitud lista supernodos");
                     myAgent.send(msg);
+
                     block();
 
                     mt = MessageTemplate.and(
                             MessageTemplate.MatchPerformative(ACLMessage.INFORM),
-                            MessageTemplate.MatchConversationId("listaSuperNodos"));
+                            MessageTemplate.MatchConversationId("solicitud lista supernodos"));
                     msg = myAgent.receive(mt);
                     try {
                         superNodos = (ArrayList<AID>) msg.getContentObject();
-                        System.out.println("Lista de super nodos Actualizada\n");
+                        System.out.println("Lista de super nodos Actualizada");
                         step = 2;
                     } catch (Exception e){
                         e.printStackTrace();
