@@ -97,7 +97,8 @@ public class SuperNodoAgent extends Agent {
                 System.out.println("Solicitando catalogo al primer supernodo.");
                 ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
                 cfp.setConversationId("solicitud catalogo");
-                cfp.addReceiver(superNodos.get(0));
+                if (!superNodos.isEmpty())
+                    cfp.addReceiver(superNodos.get(0));
                 cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
                 myAgent.send(cfp);
 
@@ -200,6 +201,7 @@ public class SuperNodoAgent extends Agent {
                     }
                     break;
                 case (1):
+                    block();
                     mt = MessageTemplate.and(
                             MessageTemplate.MatchPerformative(ACLMessage.INFORM),
                             MessageTemplate.MatchConversationId("solicitud lista supernodos"));
