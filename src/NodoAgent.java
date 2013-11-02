@@ -1,13 +1,17 @@
 import jade.core.Agent;
 import jade.core.AID;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import jade.core.behaviours.*;
+import jade.wrapper.*;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
+import java.util.LinkedList;
 
 public class NodoAgent extends Agent {
     private String targetFileName;
@@ -30,7 +34,7 @@ public class NodoAgent extends Agent {
             doDelete();
         }
 
-        File folder = new File("./Descargas_JADE");
+        File folder = new File("./Files_JADE");
         if (!folder.exists()) { 
             folder.mkdir();
         }
@@ -44,10 +48,14 @@ public class NodoAgent extends Agent {
     }
 
     //Funcion privada que reviza si los nodos aun estan activos
-    //No esta funcionando
-    private void getSuperNode(){
+    //No esta funcionando 
+    private void getSuperNode() throws Exception {
+        Object cc = getContainerController().getPlatformController(); 
+        System.out.println(cc);
         for(int i=0;i < superNodos.length; ++i){
-            System.out.println("El HAP"+this.superNodos[0].getHap());
+            //System.out.println(this.superNodos[i].getLocalName());
+            //System.out.println(cc.getAgent(this.superNodos[i].getLocalName()));
+            //System.out.println("El HAP"+this.superNodos[i].getHap());
         }
     }
 
@@ -69,7 +77,7 @@ public class NodoAgent extends Agent {
           catch (FIPAException fe) {
             fe.printStackTrace();
           }
-
+          
         }
 
         public boolean done() {
@@ -101,10 +109,25 @@ public class NodoAgent extends Agent {
                     ACLMessage reply = myAgent.receive(mt);
                     if (reply != null) {
                         // Reply received
-                        if (reply.getPerformative() == ACLMessage.INFORM) {
-                            // This is an offer 
-                            fileHolder = (String) reply.getContent();
-                            System.out.println("File holder " + fileHolder); 
+                        try{
+                            if (reply.getPerformative() == ACLMessage.INFORM) {
+                                // This is an offer 
+                                String arch = (String) reply.getContent();
+                                Fichero file = (Fichero) reply.getContentObject();
+                                LinkedList holders = file.getHolders();
+
+                                /*Accion para seleccionar un holder confiable*/
+
+                                AID holder = (AID)holders.getFirst();
+                                ACLMessage inform = new ACLMessage(ACLMessage.INFORM_IF);
+                                inform.addReceiver(holder);
+                                inform.setContent(file.getNombre());
+                                inform.setConversationId("download-file");
+                                myAgent.send(inform);
+
+                            }
+                        }catch(Exception e){
+                            e.printStackTrace();
                         }
                         step = 2; 
                     } else {
@@ -122,4 +145,74 @@ public class NodoAgent extends Agent {
         }
     }
 
+
+
+    private class SendFile extends CyclicBehaviour {
+        public void action() {
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM_IF);
+            ACLMessage msg = myAgent.receive(mt);
+            if(msg != null){
+                String nombre = msg.getContent();
+                File arch = new File("./Files_JADE/"+nombre);
+                if(arch.exists()){
+                    FileInputStream in = null;
+                    LinkedList<Integer> lista= new LinkedList<Integer>();
+                    try {
+                        in = new FileInputStream(arch);
+                        int c;
+                        int cont = 0;
+                        while ((c = in.read()) != -1) {
+                            // Leer byte a byte e insertarlos en la lista
+                            lista.add(c);
+                        }
+                    } catch (Exception e) {
+                        System.err.println(e);
+                    }catch(OutOfMemoryError b){
+                        System.out.println("Error: El archivo sobrepasa el limite de tamaño");
+                        myAgent.doDelete();
+                    }
+                
+                Object[] fileContent= lista.toArray();
+                byte[] bytefileContent= new byte[lista.size()];
+                for(int i=0; i<lista.size(); i++){
+                    bytefileContent[i]= (((Integer)fileContent[i]).byteValue());
+                }
+                ACLMessage reply = msg.createReply();
+                reply.setPerformative(ACLMessage.REQUEST);
+                reply.setByteSequenceContent(bytefileContent);
+                reply.setContent(nombre);
+                myAgent.send(reply);
+            }
+
+            }else{
+                block();
+            }
+
+          }
+    }
+
+    private class ReceiveFile extends CyclicBehaviour {
+    public void action() {
+        MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+        ACLMessage msg = myAgent.receive(mt);
+        if(msg != null){
+            String arch = "./Files_JADE/"+msg.getContent();
+            FileOutputStream out = null;
+            byte[] fileContent = msg.getByteSequenceContent();
+            // Almacenar contenido                        
+            try{
+                out = new FileOutputStream(arch);        
+                int cont=0;
+                out.write(fileContent);
+                      
+            }catch(Exception e ){
+                System.out.println("error");
+            }
+            
+        }else{
+            block();
+        }
+
+      }
+    }
 }
