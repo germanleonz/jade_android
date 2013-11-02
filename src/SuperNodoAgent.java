@@ -29,6 +29,7 @@ public class SuperNodoAgent extends Agent {
         catalogo = new Hashtable();
         //catalogo.put("archivo1", "nodo1");
 
+        //  Se registra este nodo como SuperNodo
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
@@ -42,6 +43,7 @@ public class SuperNodoAgent extends Agent {
             fe.printStackTrace();
         }
 
+        //  Se registran los comportamientos que realiza un SuperNodo
         addBehaviour(new WhoHasFileServer());
         addBehaviour(new Propagate());
         addBehaviour(new Actualizar());
@@ -102,7 +104,9 @@ public class SuperNodoAgent extends Agent {
                 cfp.setConversationId("agregarSuperNodo");
                 cfp.setContent("NuevoNodo");
                 for (int i = 0; i < superNodos.length; i++){
-                    cfp.addReceiver(superNodos[i]);
+                    if (!superNodos[i].getName().contains(getAID().getName())){
+                        cfp.addReceiver(superNodos[i]);
+                    }
                 }
                 cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
                 myAgent.send(cfp);
