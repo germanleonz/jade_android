@@ -12,10 +12,11 @@ import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import java.util.LinkedList;
+import java.util.ArrayList;
 
 public class NodoAgent extends Agent {
     private String targetFileName;
-    private AID[] superNodos;
+    private ArrayList<AID> superNodos;
 
     protected void setup() {
         System.out.println("Nodo-agent "+getAID().getName()+" is ready.");
@@ -52,7 +53,7 @@ public class NodoAgent extends Agent {
     private void getSuperNode() throws Exception {
         Object cc = getContainerController().getPlatformController(); 
         System.out.println(cc);
-        for(int i=0;i < superNodos.length; ++i){
+        for(int i=0;i < superNodos.size(); ++i){
             //System.out.println(this.superNodos[i].getLocalName());
             //System.out.println(cc.getAgent(this.superNodos[i].getLocalName()));
             //System.out.println("El HAP"+this.superNodos[i].getHap());
@@ -68,10 +69,10 @@ public class NodoAgent extends Agent {
           try {
           	DFAgentDescription[] result = DFService.search(myAgent, template); 
           	System.out.println("Found the following super nodes");
-            superNodos = new AID[result.length];
+            superNodos = new ArrayList<AID>();
             for (int i = 0; i < result.length; ++i) {
-              superNodos[i] = result[i].getName();
-	          System.out.println(superNodos[i].getName());
+              superNodos.add(result[i].getName());
+	          System.out.println(superNodos.get(i).getName());
             }
           }
           catch (FIPAException fe) {
@@ -95,7 +96,7 @@ public class NodoAgent extends Agent {
                 case 0:
                     // Send the cfp to all sellers
                     ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
-                    cfp.addReceiver(superNodos[0]);
+                    cfp.addReceiver(superNodos.get(0));
                     cfp.setContent(targetFileName);
                     cfp.setConversationId("seek-holder");
                     cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
