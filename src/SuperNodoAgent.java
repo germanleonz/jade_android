@@ -201,22 +201,25 @@ public class SuperNodoAgent extends Agent {
                     }
                     break;
                 case (1):
-                    block();
                     mt = MessageTemplate.and(
                             MessageTemplate.MatchPerformative(ACLMessage.INFORM),
                             MessageTemplate.MatchConversationId("solicitud lista supernodos"));
                     msg = myAgent.receive(mt);
-                    try {
-                        System.out.println("Enviando mi lista de supernodos");
-                        System.out.println("Mi Lista de SuperNodos es: " + superNodos.toString());
-                        reply = msg.createReply();
-                        reply.setPerformative(ACLMessage.PROPAGATE);
-                        reply.setContentObject(superNodos);
-                        reply.setConversationId("solicitud lista supernodos");
-                        myAgent.send(reply);
-                        step = 2;
-                    } catch (Exception io) {
-                        io.printStackTrace();
+                    if (msg != null) {
+                        try {
+                            System.out.println("Enviando mi lista de supernodos");
+                            System.out.println("Mi Lista de SuperNodos es: " + superNodos.toString());
+                            reply = msg.createReply();
+                            reply.setPerformative(ACLMessage.PROPAGATE);
+                            reply.setContentObject(superNodos);
+                            reply.setConversationId("solicitud lista supernodos");
+                            myAgent.send(reply);
+                            step = 2;
+                        } catch (Exception io) {
+                            io.printStackTrace();
+                        }
+                    } else {
+                        block()
                     }
             }
         }
