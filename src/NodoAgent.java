@@ -19,13 +19,13 @@ public class NodoAgent extends Agent {
     private ArrayList<AID> superNodos;
 
     // GUI a través de la cual el cliente podra interactuar :P
-    private NodoAgentGui myGui;
+    private NodoAgentGUI myGui;
 
     protected void setup() {
         System.out.println("Nodo-agent "+getAID().getName()+" is ready.");
 
         // Create and show the GUI 
-        myGui = new NodoAgentGui(this);
+        myGui = new NodoAgentGUI(this);
         myGui.show();
 
         Object[] args = getArguments();
@@ -145,7 +145,8 @@ public class NodoAgent extends Agent {
                     } 
 
                     if (reply.getPerformative() == ACLMessage.REFUSE) {
-                        System.out.println("Attempt failed: "+targetFileName+" , archivo no encontrado");
+                        System.out.println("Attempt failed archivo no encontrado");
+                        myGui.visibleMensajeError();
                     }
                 }catch(Exception e){
                     e.printStackTrace();
