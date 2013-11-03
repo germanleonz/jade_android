@@ -156,6 +156,8 @@ public class SuperNodoAgent extends Agent {
                 String fileName = msg.getContent();
                 ACLMessage reply = msg.createReply();
 
+                System.out.println("Recibí peticion por el archivo : "+fileName);
+
                 // Buscamos en el catalogo quien posee el archivo deseado por el cliente
                 String fileHolder = (String) catalogo.get(fileName);
 
@@ -167,6 +169,7 @@ public class SuperNodoAgent extends Agent {
                     reply.setContent(fileHolder);
                 }
                 else {
+                    System.out.println("El archivo :"+fileName+" no existe");
                     reply.setPerformative(ACLMessage.REFUSE);
                     reply.setContent("not-available");
                 }
@@ -179,7 +182,7 @@ public class SuperNodoAgent extends Agent {
     }
 
     /*
-       Metodo wasBorn
+       Metodo EntregarCatalogo
        Este metodo se encarga de recibir los mensajes que provienen de los nodos una vez que
        este es creado con el fin de enviarle el catalogo de los recursos
        */

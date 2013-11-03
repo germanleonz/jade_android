@@ -18,8 +18,15 @@ public class NodoAgent extends Agent {
     private String targetFileName;
     private ArrayList<AID> superNodos;
 
+    // GUI a través de la cual el cliente podra interactuar :P
+    private NodoAgentGui myGui;
+
     protected void setup() {
         System.out.println("Nodo-agent "+getAID().getName()+" is ready.");
+
+        // Create and show the GUI 
+        myGui = new NodoAgentGui(this);
+        myGui.show();
 
         Object[] args = getArguments();
         if (args != null && args.length > 0) {
@@ -48,7 +55,7 @@ public class NodoAgent extends Agent {
         System.out.println("Nodo-agent "+getAID().getName()+" terminating.");
     }
 
-    //Funcion privada que reviza si los nodos aun estan activos
+    //Funcion privada que revisa si los nodos aun estan activos
     //No esta funcionando 
     private void getSuperNode() throws Exception {
         Object cc = getContainerController().getPlatformController(); 
@@ -86,61 +93,74 @@ public class NodoAgent extends Agent {
         }
     }
 
+     /**
+     This is invoked by the GUI when the user adds a new file for search
+   */
+  public void AskHolders(final String title) {
+    addBehaviour(new OneShotBehaviour() {
+      public void action() {
+        MessageTemplate mt;
+        System.out.println("Quiero buscar el archivo : "+title);
+        // Send the cfp to all sellers
+        ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
+        cfp.addReceiver(superNodos.get(0));
+        cfp.setContent(title);
+        cfp.setConversationId("seek-holder");
+        cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
+        myAgent.send(cfp);
+        mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
+                MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+      }
+    } );
+  }
+  
+
     private class AskForHolders extends Behaviour {
         private String fileHolder; 
         private MessageTemplate mt;
         private int step = 0;
 
         public void action() {
-            switch (step) {
-                case 0:
-                    // Send the cfp to all sellers
-                    ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
-                    cfp.addReceiver(superNodos.get(0));
-                    cfp.setContent(targetFileName);
-                    cfp.setConversationId("seek-holder");
-                    cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
-                    myAgent.send(cfp);
-                    mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
-                            MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-                    step = 1;
-                    break;
-                case 1:
-                    // Receive all proposals/refusals from seller agents
-                    ACLMessage reply = myAgent.receive(mt);
-                    if (reply != null) {
-                        // Reply received
-                        try{
-                            if (reply.getPerformative() == ACLMessage.INFORM) {
-                                // This is an offer 
-                                String arch = (String) reply.getContent();
-                                Fichero file = (Fichero) reply.getContentObject();
-                                LinkedList holders = file.getHolders();
+            
+            // Receive all proposals/refusals from seller agents
+            ACLMessage reply = myAgent.receive(mt);
+            if (reply != null) {
+                // Reply received
+                try{
+                    if (reply.getPerformative() == ACLMessage.INFORM) {
+                        // This is an offer 
+                        String arch = (String) reply.getContent();
+                        Fichero file = (Fichero) reply.getContentObject();
+                        LinkedList holders = file.getHolders();
 
-                                /*Accion para seleccionar un holder confiable*/
+                        /*Accion para seleccionar un holder confiable*/
 
-                                AID holder = (AID)holders.getFirst();
-                                ACLMessage inform = new ACLMessage(ACLMessage.INFORM_IF);
-                                inform.addReceiver(holder);
-                                inform.setContent(file.getNombre());
-                                inform.setConversationId("download-file");
-                                myAgent.send(inform);
+                        AID holder = (AID)holders.getFirst();
+                        ACLMessage inform = new ACLMessage(ACLMessage.INFORM_IF);
+                        inform.addReceiver(holder);
+                        inform.setContent(file.getNombre());
+                        inform.setConversationId("download-file");
+                        myAgent.send(inform);
 
-                            }
-                        }catch(Exception e){
-                            e.printStackTrace();
-                        }
-                        step = 2; 
-                    } else {
-                        block();
+                    } 
+
+                    if (reply.getPerformative() == ACLMessage.REFUSE) {
+                        System.out.println("Attempt failed: "+targetFileName+" , archivo no encontrado");
                     }
-                    break;
-            }        
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+               
+            } else {
+                block();
+            }
+                    
+                    
         }
 
         public boolean done() {
             if (fileHolder == null) {
-                System.out.println("Attempt failed: "+targetFileName+" not available for sale");
+                //System.out.println("Attempt failed: "+targetFileName+" not available for sale");
             }
             return (fileHolder != null);
         }
