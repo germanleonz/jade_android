@@ -23,27 +23,17 @@ public class NodoAgent extends Agent {
 
     protected void setup() {
         System.out.println("Nodo-agent "+getAID().getName()+" is ready.");
+	String nodename = getAID().getName().substring(0,getAID().getName().indexOf("@"));
 
         // Create and show the GUI 
         myGui = new NodoAgentGUI(this);
         myGui.show();
 
-        Object[] args = getArguments();
-        if (args != null && args.length > 0) {
-            targetFileName = (String) args[0];
-            System.out.println("Target file is " + targetFileName);
+	addBehaviour(new SeekSuperNodes());
+	addBehaviour(new AskForHolders());
 
-            addBehaviour(new SeekSuperNodes());
-            addBehaviour(new AskForHolders());
-        }
-        else {
-            // Make the agent terminate
-            System.out.println("No file name specified");
-            doDelete();
-        }
-
-        File folder = new File("./Files_JADE");
-        if (!folder.exists()) { 
+        File folder = new File("./"+nodename+":Files_JADE");
+        if (!folder.exists()) {
             folder.mkdir();
         }
         
@@ -97,6 +87,7 @@ public class NodoAgent extends Agent {
      This is invoked by the GUI when the user adds a new file for search
    */
   public void AskHolders(final String title) {
+	System.out.println("lleguenfklas");
     addBehaviour(new OneShotBehaviour() {
       public void action() {
         MessageTemplate mt;
@@ -175,7 +166,7 @@ public class NodoAgent extends Agent {
             ACLMessage msg = myAgent.receive(mt);
             if(msg != null){
                 String nombre = msg.getContent();
-                File arch = new File("./Files_JADE/"+nombre);
+                File arch = new File("./"+nodename+"Files_JADE/"+nombre);
                 if(arch.exists()){
                     FileInputStream in = null;
                     LinkedList<Integer> lista= new LinkedList<Integer>();
@@ -218,7 +209,7 @@ public class NodoAgent extends Agent {
         MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
         ACLMessage msg = myAgent.receive(mt);
         if(msg != null){
-            String arch = "./Files_JADE/"+msg.getContent();
+            String arch = "./"+nodename+"Files_JADE/"+msg.getContent();
             FileOutputStream out = null;
             byte[] fileContent = msg.getByteSequenceContent();
             // Almacenar contenido                        
