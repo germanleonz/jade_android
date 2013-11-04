@@ -156,7 +156,12 @@ public class NodoAgentGUI extends javax.swing.JFrame {
             public void actionPerformed(ActionEvent ev) {
              
                    campoTextoFileName.setText("");
-                
+                   mensajeError.setVisible(false);
+                   LabelInformacion.setVisible(false);
+                   LabelIniciandoDescarga1.setVisible(false);
+                   LabelPorcentajeDescargado.setVisible(false);
+                   LabelDescargaCompleta.setVisible(false);
+                	LabelErrorFuente.setVisible(false);
             }
         } );
 
@@ -218,11 +223,26 @@ public class NodoAgentGUI extends javax.swing.JFrame {
         btnBuscar1.setText("Limpiar");
 
         jButton1.setText("Subir");
+        jButton1.addActionListener( new ActionListener() {
+            public void actionPerformed(ActionEvent ev) {
+                try {
+                	
+                    String title = campoTextoRutaArchivo.getText().trim();
+                    myAgent.upload(title);
+                   // campoTextoFileName.setText("");
+                }
+                catch (Exception e) {
+                    JOptionPane.showMessageDialog(NodoAgentGUI.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+                }
+            }
+        } );
      
 
         LabelCargadoExitosa.setText("Se ha cargado el archivo exitosamente !");
+        LabelCargadoExitosa.setVisible(false);
 
         LabelErrorCargando.setText("Ha ocurrido un error !, intente nuevamente");
+        LabelErrorCargando.setVisible(false);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);

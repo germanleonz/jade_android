@@ -1,6 +1,6 @@
 import java.util.LinkedList;
 import java.io.Serializable;
-
+import jade.core.AID;
 
 public class Fichero implements Serializable {
 
@@ -19,6 +19,14 @@ public class Fichero implements Serializable {
      */
     public Fichero() {
         permisos = true;
+    }
+    
+    public Fichero(AID creador,String fileName){
+    	permisos=true;
+    	owner=creador.getName();
+    	nombre=fileName;
+    	holders = new LinkedList();
+    	holders.add(creador);
     }
 
     public String getOwner() {

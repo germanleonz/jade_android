@@ -159,14 +159,19 @@ public class SuperNodoAgent extends Agent {
                 System.out.println("Recibí peticion por el archivo : "+fileName);
 
                 // Buscamos en el catalogo quien posee el archivo deseado por el cliente
-                String fileHolder = (String) catalogo.get(fileName);
+                Fichero fileHolder = (Fichero) catalogo.get(fileName);
 
 
                 if (fileHolder != null) {
                     // En caso de que alguien posea el archivo, le enviamos
                     // como respuesta el nombre de los nodos que lo tienen e informacion extra 
                     reply.setPerformative(ACLMessage.INFORM);
-                    reply.setContent(fileHolder);
+                    try{
+                    	reply.setContentObject(fileHolder);
+                    } catch (Exception io) {
+                    	io.printStackTrace();
+                	}
+                    
                 }
                 else {
                     System.out.println("El archivo :"+fileName+" no existe");
@@ -248,13 +253,13 @@ public class SuperNodoAgent extends Agent {
                 Fichero arch;
                 Fichero arch2;
                 try {
-                    if(msg.getContent().equalsIgnoreCase("NuevoArchivo")){
+                    if(msg.getConversationId().equalsIgnoreCase("NuevoArchivo")){
                         /** Espacio para  actualizar */
                         //Nuevo Archivo se recibe desde el cliente y se guarda
 
                         arch = (Fichero)msg.getContentObject();
                         catalogo.put(arch.getNombre(),arch);
-                    }else if(msg.getContent().equalsIgnoreCase("NuevoPermiso")){
+                    }else if(msg.getConversationId().equalsIgnoreCase("NuevoPermiso")){
                         //Cambio de Permisos de un archivo se recibe el archivo desde el cliente
                         arch = (Fichero) msg.getContentObject();
                         arch2 = (Fichero) catalogo.get(arch.getNombre());
@@ -282,7 +287,7 @@ public class SuperNodoAgent extends Agent {
                         superNodos[i] = result[i].getName();
                         ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
                         cfp.addReceiver(superNodos[i]);
-                        cfp. setContentObject(catalogo);
+                        cfp.setContentObject(catalogo);
                         cfp.setConversationId("propagate");
                         cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
                         myAgent.send(cfp);

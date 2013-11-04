@@ -17,13 +17,14 @@ import java.util.ArrayList;
 public class NodoAgent extends Agent {
     private String targetFileName;
     private ArrayList<AID> superNodos;
+    String nodename ;
 
     // GUI a través de la cual el cliente podra interactuar :P
     private NodoAgentGUI myGui;
 
     protected void setup() {
         System.out.println("Nodo-agent "+getAID().getName()+" is ready.");
-	String nodename = getAID().getName().substring(0,getAID().getName().indexOf("@"));
+	 	nodename = getAID().getName().substring(0,getAID().getName().indexOf("@"));
 
         // Create and show the GUI 
         myGui = new NodoAgentGUI(this);
@@ -87,7 +88,6 @@ public class NodoAgent extends Agent {
      This is invoked by the GUI when the user adds a new file for search
    */
   public void AskHolders(final String title) {
-	System.out.println("lleguenfklas");
     addBehaviour(new OneShotBehaviour() {
       public void action() {
         MessageTemplate mt;
@@ -203,6 +203,37 @@ public class NodoAgent extends Agent {
 
           }
     }
+    
+   /**
+     This is invoked by the GUI when the user adds a new file for upload
+   */
+  public void upload(final String title) {
+    addBehaviour(new OneShotBehaviour() {
+      public void action() {
+        MessageTemplate mt;
+        Fichero f;
+        System.out.println("Quiero subir el archivo : "+title);
+        
+        // Le aviso al superNOdo que tengo un nuevo archivo, y le envio
+        // el objeto de tipo Archivo
+        ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
+        cfp.addReceiver(superNodos.get(0));   
+        f = new Fichero(getAID(),title);
+        
+        try {
+        	cfp.setContentObject(f);
+        }catch (Exception io){
+            io.printStackTrace();
+        }
+        
+        cfp.setConversationId("NuevoArchivo");
+        cfp.setReplyWith("request"+System.currentTimeMillis()); // Unique value
+        myAgent.send(cfp);
+        mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
+                MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+      }
+    } );
+  }
 
     private class ReceiveFile extends CyclicBehaviour {
     public void action() {
