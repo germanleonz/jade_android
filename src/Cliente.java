@@ -11,15 +11,15 @@ public class Cliente implements Serializable {
 
 
     /*
-     Metodo Constructor
-     */
+       Metodo Constructor
+       */
     public Cliente() {
         capacidad = 0;
         confiablidad= 0;
     }
-    
+
     public Cliente(AID cliente,int cap){
-    	client = cliente;
+        client = cliente;
         capacidad = cap;
     }
 
@@ -38,5 +38,4 @@ public class Cliente implements Serializable {
     public void setCapacidad(int cap) {
         this.capacidad = cap;
     }
-  
 }
