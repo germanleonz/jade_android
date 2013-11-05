@@ -140,15 +140,19 @@ public class NodoAgent extends Agent {
         private String fileHolder; 
         private MessageTemplate mt;
         private int step = 0;
+        private AID holder = null;
 
         public void action() {
             
+
             // Receive all proposals/refusals from seller agents
+            mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("holders"));
             ACLMessage reply = myAgent.receive(mt);
             if (reply != null) {
                 // Reply received
                 try{
-                    if (reply.getPerformative() == ACLMessage.INFORM) {
                         // This is an offer 
                         String arch = (String) reply.getContent();
                         Fichero file = (Fichero) reply.getContentObject();
@@ -156,15 +160,16 @@ public class NodoAgent extends Agent {
 
                         /*Accion para seleccionar un holder confiable*/
 
-                        AID holder = (AID)holders.getFirst();
+                        holder = (AID)holders.getFirst();
                         System.out.println("El archivo lo tiene"+holder.getName());
-                        ACLMessage inform = new ACLMessage(ACLMessage.INFORM_IF);
+                        ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
                         inform.addReceiver(holder);
                         inform.setContent(file.getNombre());
+                        System.out.println("Solicitando " + file.getNombre());
                         inform.setConversationId("download-file");
                         myAgent.send(inform);
+                        System.out.println("Solicitud enviada");
 
-                    } 
 
                     if (reply.getPerformative() == ACLMessage.REFUSE) {
                         System.out.println("Attempt failed archivo no encontrado");
@@ -180,12 +185,12 @@ public class NodoAgent extends Agent {
                     
                     
         }
-
         public boolean done() {
-            if (fileHolder == null) {
+            if (holder == null) {
                 //System.out.println("Attempt failed: "+targetFileName+" not available for sale");
+               System.out.println(holder != null);
             }
-            return (fileHolder != null);
+            return (holder != null);
         }
     }
 
@@ -239,11 +244,15 @@ public class NodoAgent extends Agent {
 
     private class SendFile extends CyclicBehaviour {
         public void action() {
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM_IF);
+            System.out.println("Sendfile behaviour");
+            MessageTemplate mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("download-file"));
             ACLMessage msg = myAgent.receive(mt);
             if(msg != null){
                 String nombre = msg.getContent();
                 File arch = new File("./"+nodename+":Files_JADE/"+nombre);
+                System.out.println("Solicitaron archivo " + nombre);
                 if(arch.exists()){
                     FileInputStream in = null;
                     LinkedList<Integer> lista= new LinkedList<Integer>();

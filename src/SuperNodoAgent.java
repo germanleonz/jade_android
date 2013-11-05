@@ -193,7 +193,9 @@ public class SuperNodoAgent extends Agent {
     private class WhoHasFileServer extends CyclicBehaviour {
         public void action() {
             // Recibimos el mensaje
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.CFP);
+            MessageTemplate mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.CFP),
+                    MessageTemplate.MatchConversationId("seek-holder"));
             ACLMessage msg = myAgent.receive(mt);
 
             // Si no hemos recibido ningun mensaje se bloquea para no ocupar CPU
@@ -212,6 +214,7 @@ public class SuperNodoAgent extends Agent {
                     // En caso de que alguien posea el archivo, le enviamos
                     // como respuesta el nombre de los nodos que lo tienen e informacion extra 
                     reply.setPerformative(ACLMessage.INFORM);
+                    reply.setConversationId("holders");
                     try{
                     	reply.setContentObject(fileHolder);
                     } catch (Exception io) {
@@ -303,6 +306,15 @@ public class SuperNodoAgent extends Agent {
                     if(msg.getConversationId().equalsIgnoreCase("NuevoArchivo")){
                         /** Espacio para  actualizar */
                         //Nuevo Archivo se recibe desde el cliente y se guarda
+
+                        /*
+
+                                Replicar:
+                                1. Buscar 2k-1 replicas
+                                2. Enviar archivo a las replicas
+                                3. Verificar checksum:
+
+                        */
 
                         arch = (Fichero)msg.getContentObject();
                         catalogo.put(arch.getNombre(),arch);
