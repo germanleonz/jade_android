@@ -18,6 +18,8 @@ public class NodoAgent extends Agent {
     private String targetFileName;
     private ArrayList<AID> superNodos;
     String nodename ;
+    String capacidadMax;  // capacidad con la que inicia
+    int capacidadAct; // capacidad disponible
 
     // GUI a través de la cual el cliente podra interactuar :P
     private NodoAgentGUI myGui;
@@ -25,18 +27,32 @@ public class NodoAgent extends Agent {
     protected void setup() {
         System.out.println("Nodo-agent "+getAID().getName()+" is ready.");
 	 	nodename = getAID().getName().substring(0,getAID().getName().indexOf("@"));
+        capacidadAct = 0;
+        superNodos = new ArrayList();
+        // Get the title of the book to buy as a start-up argument
+        Object[] args = getArguments();
+        if (args != null && args.length > 0) {
+            // Create and show the GUI 
+            myGui = new NodoAgentGUI(this);
+            myGui.show();
 
-        // Create and show the GUI 
-        myGui = new NodoAgentGUI(this);
-        myGui.show();
+            capacidadMax = (String) args[0];
 
-	addBehaviour(new SeekSuperNodes());
-	addBehaviour(new AskForHolders());
+            addBehaviour(new SeekSuperNodes());
+            addBehaviour(new AskForHolders());
 
-        File folder = new File("./"+nodename+":Files_JADE");
-        if (!folder.exists()) {
-            folder.mkdir();
+            File folder = new File("./"+nodename+":Files_JADE");
+            if (!folder.exists()) {
+                folder.mkdir();
+            }
+
+           
+        }else{
+            System.out.println("Debe especificar la capacidad maxima");
         }
+
+        
+
         
     }
 
@@ -71,6 +87,16 @@ public class NodoAgent extends Agent {
             for (int i = 0; i < result.length; ++i) {
               superNodos.add(result[i].getName());
 	          System.out.println(superNodos.get(i).getName());
+              if(i==0){
+                 System.out.println("Me registro!");
+                // Send the cfp to all sellers
+                ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+                cfp.addReceiver(result[i].getName());
+                cfp.setContent(capacidadMax);
+                cfp.setConversationId("registro");
+
+                myAgent.send(cfp);
+              }
             }
           }
           catch (FIPAException fe) {
@@ -83,6 +109,8 @@ public class NodoAgent extends Agent {
             return true;
         }
     }
+
+
 
      /**
      This is invoked by the GUI when the user adds a new file for search
