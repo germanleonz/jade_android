@@ -89,22 +89,22 @@ public class SuperNodoAgent extends Agent {
             msg = myAgent.receive(mt);
             if (msg != null) {
                 AID sender = msg.getSender();
-               client= new Cliente(sender,Integer.valueOf(msg.getContent()));
-               System.out.println("Registro nuevo cliente");
-               nodos.put(sender,client);// agrego el nodo a la tabla de hash
+                client= new Cliente(sender,Integer.valueOf(msg.getContent()));
+                System.out.println("Registro nuevo cliente");
+                nodos.put(sender,client);// agrego el nodo a la tabla de hash
 
 
                 //Por cada superNodo le enviamos la nueva Tabla de Hash de nodos
                 for (int i = 0; i < superNodos.size(); i++) {
-                   
+
                     ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
                     cfp.addReceiver(superNodos.get(i));
                     try{
-                       cfp.setContentObject(nodos); 
+                        cfp.setContentObject(nodos); 
                     }catch (Exception io) {
                         io.printStackTrace();
                     }
-                    
+
                     cfp.setConversationId("registro");
                     myAgent.send(cfp);
                 }
@@ -144,7 +144,7 @@ public class SuperNodoAgent extends Agent {
                 if (superNodos.size() > 1) {
                     cfp = new ACLMessage(ACLMessage.INFORM);
                     cfp.setConversationId("solicitud catalogo");
-                    
+
                     for (AID superNodo: superNodos) {
                         if (!superNodo.getName().contains(getAID().getName())) {
                             cfp.addReceiver(superNodo);
@@ -216,11 +216,11 @@ public class SuperNodoAgent extends Agent {
                     reply.setPerformative(ACLMessage.INFORM);
                     reply.setConversationId("holders");
                     try{
-                    	reply.setContentObject(fileHolder);
+                        reply.setContentObject(fileHolder);
                     } catch (Exception io) {
-                    	io.printStackTrace();
-                	}
-                    
+                        io.printStackTrace();
+                    }
+
                 }
                 else {
                     System.out.println("El archivo :"+fileName+" no existe");
