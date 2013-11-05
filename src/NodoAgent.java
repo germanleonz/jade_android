@@ -155,10 +155,11 @@ public class NodoAgent extends Agent {
                         String nombreArchivo = reply.getUserDefinedParameter("nombreArchivo");
                         AID mejorHolder      = (AID) reply.getContentObject();
 
+                        ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
                         inform.addReceiver(mejorHolder);
                         inform.setContent(nombreArchivo);
                         System.out.println("El archivo lo tiene"+mejorHolder.getName());
-                        ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
+
                         System.out.println("Solicitando " + nombreArchivo);
                         inform.setConversationId("download-file");
                         myAgent.send(inform);
@@ -207,9 +208,9 @@ public class NodoAgent extends Agent {
 
                 // Le aviso al superNodo que tengo un nuevo archivo, y le envio
                 // el objeto de tipo Archivo
-                String[] split = path.split("/");
+                split = path.split("/");
                 //hacemos split 
-                ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
+                cfp = new ACLMessage(ACLMessage.REQUEST);
                 cfp.addReceiver(superNodos.get(0));   
                 f = new Fichero(getAID(),split[split.length-1]);
 
