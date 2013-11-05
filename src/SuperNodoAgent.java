@@ -27,6 +27,7 @@ public class SuperNodoAgent extends Agent {
        */
     protected void setup() {
         catalogo = new Hashtable();
+        nodos = new Hashtable();
 
         //  Se registra este nodo como SuperNodo
         DFAgentDescription dfd = new DFAgentDescription();
@@ -46,12 +47,13 @@ public class SuperNodoAgent extends Agent {
         addBehaviour(new Nacimiento());
         addBehaviour(new EntregarCatalogo());
         addBehaviour(new Actualizar());
+        addBehaviour(new ActualizarNodos());
 
         //  Se registra el resto de los comportamientos del SuperNodo
         addBehaviour(new WhoHasFileServer());
         addBehaviour(new Propagate());
-        addBehaviour(new DescargaExitosa());
-        addBehaviour(new DescargaNoExitosa());
+        addBehaviour(new Registro());
+
     }
 
     /*
@@ -68,6 +70,49 @@ public class SuperNodoAgent extends Agent {
         System.out.println("Supernodo-agent " + getAID().getName() + " terminando.");
     }
 
+
+    /*
+       Metodo Registro
+       Este metodo se encarga de registrar un cliente
+       */
+    private class Registro extends CyclicBehaviour {
+        MessageTemplate mt;
+        ACLMessage msg;
+        Cliente client;
+
+        public void action() {
+
+            // Recibimos el mensaje
+            mt =  MessageTemplate.and(  
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("registro"));
+            msg = myAgent.receive(mt);
+            if (msg != null) {
+                AID sender = msg.getSender();
+               client= new Cliente(sender,Integer.valueOf(msg.getContent()));
+               System.out.println("Registro nuevo cliente");
+               nodos.put(sender,client);// agrego el nodo a la tabla de hash
+
+
+                //Por cada superNodo le enviamos la nueva Tabla de Hash de nodos
+                for (int i = 0; i < superNodos.size(); i++) {
+                   
+                    ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
+                    cfp.addReceiver(superNodos.get(i));
+                    try{
+                       cfp.setContentObject(nodos); 
+                    }catch (Exception io) {
+                        io.printStackTrace();
+                    }
+                    
+                    cfp.setConversationId("registro");
+                    myAgent.send(cfp);
+                }
+            } else {
+                block();
+            }
+        }
+    }   
 
     /*
        Metodo Nacimiento
@@ -153,6 +198,7 @@ public class SuperNodoAgent extends Agent {
 
             // Si no hemos recibido ningun mensaje se bloquea para no ocupar CPU
             if (msg != null) {
+
                 String fileName = msg.getContent();
                 ACLMessage reply = msg.createReply();
 
@@ -210,6 +256,7 @@ public class SuperNodoAgent extends Agent {
                     reply.setPerformative(ACLMessage.PROPAGATE);
                     reply.setContentObject(catalogo);
                     myAgent.send(reply);
+                    superNodos.add(msg.getSender());
                 } catch (Exception io) {
                     io.printStackTrace();
                 }
@@ -335,121 +382,31 @@ public class SuperNodoAgent extends Agent {
         }
     }
 
-    /*
-       Metodo DescargaExitosa
-       Este behaviour se ejecuta cuando un super nodo es notificado de que 
-       una descarga se ha realizado satisfactoriamente y debe aumentar la 
-       confiabilidad del nodo que se le pasa en el contenido del mensaje
+    /* Metodo ActualizarNodos
+       Este metodo se encarga de actualizar la Tabla de Hash de nodos debido un
+       registro de un nuevo nodo
        */
-    private class DescargaExitosa extends CyclicBehaviour {
+    private class ActualizarNodos extends CyclicBehaviour {
+        MessageTemplate mt;
+        ACLMessage msg;
 
         public void action() {
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM_REF);
-            ACLMessage msg = myAgent.receive(mt);
+            mt  = MessageTemplate.and(  
+                    MessageTemplate.MatchPerformative(ACLMessage.PROPAGATE),
+                    MessageTemplate.MatchConversationId("registro"));
+            msg = myAgent.receive(mt);
             if (msg != null) {
-
-
-                // Obtenemos del contenido del mensaje cual es el nodo
-                // con el cual se ejecuto la descarga correctamente
-                String cliente = msg.getContent();
-
-                //Obtenemos la confiablidad que poseía el cliente
-                String confiablidad = (String) nodos.get(cliente);
-                int conf = Integer.parseInt(confiablidad);
-
-                if (confiablidad != null){
-                    //Aumentamos su confiablidad
-                    nodos.put(cliente,conf++);
-                }
-                System.out.println("Descarga Exitosa. Buen trabajo "+cliente);
-
+                // Mensaje recibido.
+                // Archivo pedido
                 try {
-                    //Reenviamos el mismo mensaje al resto de los super nodos
-                    DFAgentDescription template = new DFAgentDescription();
-                    ServiceDescription sd = new ServiceDescription();
-                    sd.setType("supernodo");
-                    template.addServices(sd);
-                    // Buscamos todos los agentes que posean el servicio SuperNodo
-                    DFAgentDescription[] result = DFService.search(myAgent, template); 
-                    AID[] superNodos = new AID[result.length];
-
-                    //Por cada superNodo le enviamos la nueva Tabla de Hash
-                    for (int i = 0; i < result.length; ++i) {
-                        if (!result[i].getName().getName().contains(getAID().getName())){
-                            superNodos[i] = result[i].getName();
-                            ACLMessage cfp = new ACLMessage(ACLMessage.INFORM_REF);
-                            cfp.addReceiver(superNodos[i]);
-                            cfp. setContentObject(cliente);
-                            myAgent.send(cfp);
-                        }
-                    }
-                }catch (FIPAException fe) {
-                    fe.printStackTrace();
-                }catch (Exception io){
-                    io.printStackTrace();
+                    // En el mensaje se encuentra la tabla de Hash de nodos
+                    Hashtable nuevosNodos = (Hashtable)msg.getContentObject();
+                    // Esta sera nuestra nueva tabla de hash de nodos
+                    nodos = nuevosNodos;
+                    System.out.println("Tabla de Hash de NODOS  Actualizada.");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-            } else {
-                block();
-            }
-        }
-    }
-
-
-    /*
-       Metodo DescargaNoExitosa
-       Este behaviour se ejecuta cuando un super nodo es notificado de que 
-       una descarga NO se ha realizado satisfactoriamente y debe disminuir la 
-       confiabilidad del nodo que se le pasa en el contenido del mensaje
-       */
-    private class DescargaNoExitosa extends CyclicBehaviour {
-
-        public void action() {
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM_IF);
-            ACLMessage msg = myAgent.receive(mt);
-            if (msg != null) {
-
-
-                // Obtenemos del contenido del mensaje cual es el nodo
-                // con el cual se ejecuto la descarga correctamente
-                String cliente = msg.getContent();
-
-                //Obtenemos la confiablidad que poseía el cliente
-                String confiablidad = (String) nodos.get(cliente);
-                int conf = Integer.parseInt(confiablidad);
-
-                if (confiablidad != null){
-                    //Disminuimos su confiablidad
-                    nodos.put(cliente,conf--);
-                }
-                System.out.println("Descarga Fallida. "+cliente);
-
-                try {
-                    //Reenviamos el mismo mensaje al resto de los super nodos
-                    DFAgentDescription template = new DFAgentDescription();
-                    ServiceDescription sd = new ServiceDescription();
-                    sd.setType("supernodo");
-                    template.addServices(sd);
-                    // Buscamos todos los agentes que posean el servicio SuperNodo
-                    DFAgentDescription[] result = DFService.search(myAgent, template); 
-                    AID[] superNodos = new AID[result.length];
-
-                    //Por cada superNodo le enviamos la nueva Tabla de Hash
-                    for (int i = 0; i < result.length; ++i) {
-                        if (!result[i].getName().getName().contains(getAID().getName())){
-                            superNodos[i] = result[i].getName();
-                            ACLMessage cfp = new ACLMessage(ACLMessage.INFORM_IF);
-                            cfp.addReceiver(superNodos[i]);
-                            cfp. setContentObject(cliente);
-                            myAgent.send(cfp);
-                        }
-                    }
-                }catch (FIPAException fe) {
-                    fe.printStackTrace();
-                }catch (Exception io){
-                    io.printStackTrace();
-                }
-
             } else {
                 block();
             }
