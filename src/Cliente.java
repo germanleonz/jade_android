@@ -21,6 +21,7 @@ public class Cliente implements Serializable {
     public Cliente(AID cliente,int cap){
         client = cliente;
         capacidad = cap;
+        confiablidad = 0;
     }
 
     public int getConfiabilidad() {

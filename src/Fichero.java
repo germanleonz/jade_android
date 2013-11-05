@@ -22,10 +22,10 @@ public class Fichero implements Serializable {
     }
     
     public Fichero(AID creador,String fileName){
-    	permisos=true;
-    	owner=creador.getName();
-    	nombre=fileName;
-    	holders = new LinkedList();
+    	permisos = true;
+    	owner    = creador.getName();
+    	nombre   = fileName;
+    	holders  = new LinkedList();
     	holders.add(creador);
     }
 

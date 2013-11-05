@@ -26,7 +26,7 @@ public class NodoAgent extends Agent {
 
     protected void setup() {
         System.out.println("Nodo-agent "+getAID().getName()+" is ready.");
-	 	nodename = getAID().getName().substring(0,getAID().getName().indexOf("@"));
+        nodename = getAID().getName().substring(0,getAID().getName().indexOf("@"));
         capacidadAct = 0;
         superNodos = new ArrayList();
         // Get the title of the book to buy as a start-up argument
@@ -38,24 +38,24 @@ public class NodoAgent extends Agent {
 
             capacidadMax = (String) args[0];
 
-	addBehaviour(new SeekSuperNodes());
-	addBehaviour(new AskForHolders());
-    addBehaviour(new SendFile());
-    addBehaviour(new ReceiveFile());
+            addBehaviour(new SeekSuperNodes());
+            addBehaviour(new AskForHolders());
+            addBehaviour(new SendFile());
+            addBehaviour(new ReceiveFile());
 
             File folder = new File("./"+nodename+":Files_JADE");
             if (!folder.exists()) {
                 folder.mkdir();
             }
 
-           
+
         }else{
             System.out.println("Debe especificar la capacidad maxima");
         }
 
-        
 
-        
+
+
     }
 
     // Put agent clean-up operations here
@@ -78,33 +78,33 @@ public class NodoAgent extends Agent {
 
     private class SeekSuperNodes extends Behaviour {
         public void action() {
-          DFAgentDescription template = new DFAgentDescription();
-          ServiceDescription sd = new ServiceDescription();
-          sd.setType("supernodo");
-          template.addServices(sd);
-          try {
-          	DFAgentDescription[] result = DFService.search(myAgent, template); 
-          	System.out.println("Found the following super nodes");
-            superNodos = new ArrayList<AID>();
-            for (int i = 0; i < result.length; ++i) {
-              superNodos.add(result[i].getName());
-	          System.out.println(superNodos.get(i).getName());
-              if(i==0){
-                 System.out.println("Me registro!");
-                // Send the cfp to all sellers
-                ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
-                cfp.addReceiver(result[i].getName());
-                cfp.setContent(capacidadMax);
-                cfp.setConversationId("registro");
+            DFAgentDescription template = new DFAgentDescription();
+            ServiceDescription sd = new ServiceDescription();
+            sd.setType("supernodo");
+            template.addServices(sd);
+            try {
+                DFAgentDescription[] result = DFService.search(myAgent, template); 
+                System.out.println("Found the following super nodes");
+                superNodos = new ArrayList<AID>();
+                for (int i = 0; i < result.length; ++i) {
+                    superNodos.add(result[i].getName());
+                    System.out.println(superNodos.get(i).getName());
+                    if(i==0){
+                        System.out.println("Me registro!");
+                        // Send the cfp to all sellers
+                        ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+                        cfp.addReceiver(result[i].getName());
+                        cfp.setContent(capacidadMax);
+                        cfp.setConversationId("registro");
 
-                myAgent.send(cfp);
-              }
+                        myAgent.send(cfp);
+                    }
+                }
             }
-          }
-          catch (FIPAException fe) {
-            fe.printStackTrace();
-          }
-          
+            catch (FIPAException fe) {
+                fe.printStackTrace();
+            }
+
         }
 
         public boolean done() {
@@ -114,27 +114,27 @@ public class NodoAgent extends Agent {
 
 
 
-     /**
-     This is invoked by the GUI when the user adds a new file for search
-   */
-  public void AskHolders(final String title) {
-    addBehaviour(new OneShotBehaviour() {
-      public void action() {
-        MessageTemplate mt;
-        System.out.println("Quiero buscar el archivo : "+title);
-        // Send the cfp to all sellers
-        ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
-        cfp.addReceiver(superNodos.get(0));
-        cfp.setContent(title);
-        cfp.setConversationId("seek-holder");
-        cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
-        myAgent.send(cfp);
-        mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
-                MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-      }
-    } );
-  }
-  
+    /**
+      This is invoked by the GUI when the user adds a new file for search
+      */
+    public void AskHolders(final String title) {
+        addBehaviour(new OneShotBehaviour() {
+            public void action() {
+                MessageTemplate mt;
+                System.out.println("Quiero buscar el archivo : "+title);
+                // Send the cfp to all sellers
+                ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
+                cfp.addReceiver(superNodos.get(0));
+                cfp.setContent(title);
+                cfp.setConversationId("seek-holder");
+                cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
+                myAgent.send(cfp);
+                mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
+                    MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+            }
+        } );
+    }
+
 
     private class AskForHolders extends Behaviour {
         private String fileHolder; 
@@ -142,7 +142,7 @@ public class NodoAgent extends Agent {
         private int step = 0;
 
         public void action() {
-            
+
             // Receive all proposals/refusals from seller agents
             ACLMessage reply = myAgent.receive(mt);
             if (reply != null) {
@@ -173,12 +173,12 @@ public class NodoAgent extends Agent {
                 }catch(Exception e){
                     e.printStackTrace();
                 }
-               
+
             } else {
                 block();
             }
-                    
-                    
+
+
         }
 
         public boolean done() {
@@ -190,51 +190,51 @@ public class NodoAgent extends Agent {
     }
 
     /**
-     This is invoked by the GUI when the user adds a new file for upload
-   */
-  public void upload(final String path) {
-    addBehaviour(new OneShotBehaviour() {
-      public void action() {
-        MessageTemplate mt;
-        Fichero f;
-        String nombre;
-        System.out.println("Quiero subir el archivo : "+path);
-        
-        // Le aviso al superNodo que tengo un nuevo archivo, y le envio
-        // el objeto de tipo Archivo
-        String[] split = path.split("/");
-        //hacemos split 
-        ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
-        cfp.addReceiver(superNodos.get(0));   
-        f = new Fichero(getAID(),split[split.length-1]);
+      This is invoked by the GUI when the user adds a new file for upload
+      */
+    public void upload(final String path) {
+        addBehaviour(new OneShotBehaviour() {
+            public void action() {
+                MessageTemplate mt;
+                Fichero f;
+                String nombre;
+                System.out.println("Quiero subir el archivo : "+path);
 
-        //Copiamos el archivo a la carpeta de jade que creamos
-        FileInputStream is = null;
-        FileOutputStream os = null;
-        try {
-            is = new FileInputStream(path);
-            os = new FileOutputStream("./"+nodename+":Files_JADE/"+f.getNombre());
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = is.read(buffer)) > 0) {
-                os.write(buffer, 0, length);
+                // Le aviso al superNodo que tengo un nuevo archivo, y le envio
+                // el objeto de tipo Archivo
+                String[] split = path.split("/");
+                //hacemos split 
+                ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
+                cfp.addReceiver(superNodos.get(0));   
+                f = new Fichero(getAID(),split[split.length-1]);
+
+                //Copiamos el archivo a la carpeta de jade que creamos
+                FileInputStream is = null;
+                FileOutputStream os = null;
+                try {
+                    is = new FileInputStream(path);
+                    os = new FileOutputStream("./"+nodename+":Files_JADE/"+f.getNombre());
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = is.read(buffer)) > 0) {
+                        os.write(buffer, 0, length);
+                    }
+                    is.close();
+                    os.close();
+                    cfp.setContentObject(f);
+                    cfp.setConversationId("NuevoArchivo");
+                    cfp.setReplyWith("request"+System.currentTimeMillis()); // Unique value
+                    myAgent.send(cfp);
+                    mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
+                            MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+                }catch (Exception io){
+                    io.printStackTrace();
+
+                }
+
             }
-            is.close();
-            os.close();
-            cfp.setContentObject(f);
-            cfp.setConversationId("NuevoArchivo");
-            cfp.setReplyWith("request"+System.currentTimeMillis()); // Unique value
-            myAgent.send(cfp);
-            mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
-                MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-        }catch (Exception io){
-            io.printStackTrace();
-            
-        }
-        
-      }
-    } );
-  }
+        } );
+    }
 
 
     private class SendFile extends CyclicBehaviour {
@@ -261,7 +261,7 @@ public class NodoAgent extends Agent {
                         System.out.println("Error: El archivo sobrepasa el limite de tamaño");
                         myAgent.doDelete();
                     }
-                
+
                     System.out.println("Enviando archivo "+nombre);
 
                     Object[] fileContent= lista.toArray();
@@ -282,32 +282,32 @@ public class NodoAgent extends Agent {
                 block();
             }
 
-          }
-    }
-    
-    private class ReceiveFile extends CyclicBehaviour {
-    public void action() {
-        MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-        ACLMessage msg = myAgent.receive(mt);
-        if(msg != null){
-            String arch = "./"+nodename+":Files_JADE/"+msg.getUserDefinedParameter("file-name");
-            FileOutputStream out = null;
-            byte[] fileContent = msg.getByteSequenceContent();
-            try{
-            // Almacenar contenido                        
-           
-                out = new FileOutputStream(arch);        
-                out.write(fileContent);
-                out.close();
-                      
-            }catch(Exception e ){
-                e.printStackTrace();
-            }
-            
-        }else{
-            block();
         }
+    }
 
-      }
+    private class ReceiveFile extends CyclicBehaviour {
+        public void action() {
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+            ACLMessage msg = myAgent.receive(mt);
+            if(msg != null){
+                String arch = "./"+nodename+":Files_JADE/"+msg.getUserDefinedParameter("file-name");
+                FileOutputStream out = null;
+                byte[] fileContent = msg.getByteSequenceContent();
+                try{
+                    // Almacenar contenido                        
+
+                    out = new FileOutputStream(arch);        
+                    out.write(fileContent);
+                    out.close();
+
+                }catch(Exception e ){
+                    e.printStackTrace();
+                }
+
+            }else{
+                block();
+            }
+
+        }
     }
 }
