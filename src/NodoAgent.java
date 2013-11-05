@@ -79,7 +79,7 @@ public class NodoAgent extends Agent {
     private class SeekSuperNodes extends Behaviour {
         public void action() {
             DFAgentDescription template = new DFAgentDescription();
-            ServiceDescription sd       = new ServiceDescription();
+            ServiceDescription sd = new ServiceDescription();
             sd.setType("supernodo");
             template.addServices(sd);
             try {
@@ -139,27 +139,31 @@ public class NodoAgent extends Agent {
         private String fileHolder; 
         private MessageTemplate mt;
         private int step = 0;
+        private AID holder = null;
 
         public void action() {
 
             // Receive all proposals/refusals from seller agents
+            mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("holders"));
             ACLMessage reply = myAgent.receive(mt);
             if (reply != null) {
                 // Reply received
                 try{
-                    if (reply.getPerformative() == ACLMessage.INFORM) {
                         // This is an offer 
                         String nombreArchivo = reply.getUserDefinedParameter("nombreArchivo");
                         AID mejorHolder      = (AID) reply.getContentObject();
 
-                        System.out.println("El archivo lo tiene"+mejorHolder.getName());
-                        ACLMessage inform = new ACLMessage(ACLMessage.INFORM_IF);
                         inform.addReceiver(mejorHolder);
                         inform.setContent(nombreArchivo);
+                        System.out.println("El archivo lo tiene"+mejorHolder.getName());
+                        ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
+                        System.out.println("Solicitando " + nombreArchivo);
                         inform.setConversationId("download-file");
                         myAgent.send(inform);
+                        System.out.println("Solicitud enviada");
 
-                    } 
 
                     if (reply.getPerformative() == ACLMessage.REFUSE) {
                         System.out.println("Attempt failed archivo no encontrado");
@@ -173,25 +177,33 @@ public class NodoAgent extends Agent {
                 block();
             }
         }
-
         public boolean done() {
-            if (fileHolder == null) {
+            if (holder == null) {
                 //System.out.println("Attempt failed: "+targetFileName+" not available for sale");
+               System.out.println(holder != null);
             }
-            return (fileHolder != null);
+            return (holder != null);
         }
     }
 
     /**
-      This is invoked by the GUI when the user adds a new file for upload
-      */
-    public void upload(final String path) {
-        addBehaviour(new OneShotBehaviour() {
-            public void action() {
-                MessageTemplate mt;
-                Fichero f;
-                String nombre;
-                System.out.println("Quiero subir el archivo : "+path);
+     This is invoked by the GUI when the user adds a new file for upload
+   */
+  public void upload(final String path) {
+    addBehaviour(new OneShotBehaviour() {
+      public void action() {
+        MessageTemplate mt;
+        Fichero f;
+        String nombre;
+        System.out.println("Quiero subir el archivo : "+path);
+        
+        // Le aviso al superNodo que tengo un nuevo archivo, y le envio
+        // el objeto de tipo Archivo
+        String[] split = path.split("/");
+        //hacemos split 
+        ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
+        cfp.addReceiver(superNodos.get(0));   
+        f = new Fichero(getAID(),split[split.length-1]);
 
                 // Le aviso al superNodo que tengo un nuevo archivo, y le envio
                 // el objeto de tipo Archivo
@@ -231,11 +243,15 @@ public class NodoAgent extends Agent {
 
     private class SendFile extends CyclicBehaviour {
         public void action() {
-            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM_IF);
-            ACLMessage msg     = myAgent.receive(mt);
+            System.out.println("Sendfile behaviour");
+            MessageTemplate mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("download-file"));
+            ACLMessage msg = myAgent.receive(mt);
             if(msg != null){
                 String nombre = msg.getContent();
                 File arch = new File("./"+nodename+":Files_JADE/"+nombre);
+                System.out.println("Solicitaron archivo " + nombre);
                 if(arch.exists()){
                     FileInputStream in = null;
                     LinkedList<Integer> lista= new LinkedList<Integer>();
