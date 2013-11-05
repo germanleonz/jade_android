@@ -39,4 +39,12 @@ public class Cliente implements Serializable {
     public void setCapacidad(int cap) {
         this.capacidad = cap;
     }
+
+    public AID getClientAID() {
+        return client;
+    }
+
+    public void setClientAID(AID nuevoAID) {
+        this.client = nuevoAID;
+    }
 }

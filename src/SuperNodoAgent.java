@@ -9,14 +9,19 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 
 import java.util.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class SuperNodoAgent extends Agent {
 
     // Se almacenan los recursos y quienes lo poseen
-    private Hashtable catalogo;
+    private Hashtable<String, Fichero> catalogo;
 
     // Se almacena los nodos y su confiabilidad
-    private Hashtable nodos;
+    private Hashtable<AID, Cliente> nodos;
 
     private ArrayList<AID> superNodos;
 
@@ -26,8 +31,8 @@ public class SuperNodoAgent extends Agent {
        el servicio de superNodo
        */
     protected void setup() {
-        catalogo = new Hashtable();
-        nodos = new Hashtable();
+        catalogo = new Hashtable<String, Fichero>();
+        nodos    = new Hashtable<AID, Cliente>();
 
         //  Se registra este nodo como SuperNodo
         DFAgentDescription dfd = new DFAgentDescription();
@@ -53,7 +58,6 @@ public class SuperNodoAgent extends Agent {
         addBehaviour(new WhoHasFileServer());
         addBehaviour(new Propagate());
         addBehaviour(new Registro());
-
     }
 
     /*
@@ -73,7 +77,8 @@ public class SuperNodoAgent extends Agent {
 
     /*
        Metodo Registro
-       Este metodo se encarga de registrar un cliente
+       Este behaviour se encarga de registrar a un cliente localmente y de enviar la nueva
+       tabla de nodos a los demas supernodos
        */
     private class Registro extends CyclicBehaviour {
         MessageTemplate mt;
@@ -89,12 +94,11 @@ public class SuperNodoAgent extends Agent {
             msg = myAgent.receive(mt);
             if (msg != null) {
                 AID sender = msg.getSender();
-                client= new Cliente(sender,Integer.valueOf(msg.getContent()));
+                client     = new Cliente(sender,Integer.valueOf(msg.getContent()));
                 System.out.println("Registro nuevo cliente");
                 nodos.put(sender,client);// agrego el nodo a la tabla de hash
 
-
-                //Por cada superNodo le enviamos la nueva Tabla de Hash de nodos
+                //  Le enviamos la nueva Tabla de Hash de nodos a cada SuperNodo
                 for (int i = 0; i < superNodos.size(); i++) {
 
                     ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
@@ -171,7 +175,7 @@ public class SuperNodoAgent extends Agent {
                     cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
                     myAgent.send(cfp);
                 } else {
-                    System.out.println("Este es el unico supernodo del sistema.");
+                    System.out.println("Este es el unico supernodo del sistema. No envio notificaciones.");
                 }
             }
             catch (FIPAException fe) {
@@ -194,7 +198,7 @@ public class SuperNodoAgent extends Agent {
         public void action() {
             // Recibimos el mensaje
             MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.CFP);
-            ACLMessage msg = myAgent.receive(mt);
+            ACLMessage msg     = myAgent.receive(mt);
 
             // Si no hemos recibido ningun mensaje se bloquea para no ocupar CPU
             if (msg != null) {
@@ -205,15 +209,24 @@ public class SuperNodoAgent extends Agent {
                 System.out.println("Recibí peticion por el archivo : "+fileName);
 
                 // Buscamos en el catalogo quien posee el archivo deseado por el cliente
-                Fichero fileHolder = (Fichero) catalogo.get(fileName);
+                Fichero fileData = catalogo.get(fileName);
 
+                if (fileData != null) {
+                    // En caso de que varios nodos posean el archivo, le enviamos
+                    // como respuesta el nombre del nodo mas confiable que lo tenga
+                    Cliente mejorHolder = new Cliente();
+    
+                    for (AID holder: fileData.getHolders()) {
+                        Cliente datosNodo = nodos.get(holder);
+                        if (datosNodo.getConfiabilidad() > mejorHolder.getConfiabilidad()) {
+                            mejorHolder = datosNodo;
+                        }
+                    }   
 
-                if (fileHolder != null) {
-                    // En caso de que alguien posea el archivo, le enviamos
-                    // como respuesta el nombre de los nodos que lo tienen e informacion extra 
                     reply.setPerformative(ACLMessage.INFORM);
                     try{
-                        reply.setContentObject(fileHolder);
+                        reply.addUserDefinedParameter("nombreArchivo". fileName);
+                        reply.setContentObject(mejorHolder.getClientAID());
                     } catch (Exception io) {
                         io.printStackTrace();
                     }
@@ -294,7 +307,7 @@ public class SuperNodoAgent extends Agent {
         public void action() {
             // Recibimos el mensaje que puede venir de un Nodo
             MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-            ACLMessage msg = myAgent.receive(mt);
+            ACLMessage msg     = myAgent.receive(mt);
 
             if (msg != null) {
                 Fichero arch;
@@ -308,15 +321,15 @@ public class SuperNodoAgent extends Agent {
                         catalogo.put(arch.getNombre(),arch);
                     }else if(msg.getConversationId().equalsIgnoreCase("NuevoPermiso")){
                         //Cambio de Permisos de un archivo se recibe el archivo desde el cliente
-                        arch = (Fichero) msg.getContentObject();
-                        arch2 = (Fichero) catalogo.get(arch.getNombre());
+                        arch  = (Fichero) msg.getContentObject();
+                        arch2 = catalogo.get(arch.getNombre());
                         //Actualizar la lista de holders
                         arch.setHolders(arch2.getHolders());
                         catalogo.put(arch.getNombre(),arch);
                     }else{
                         //Nuevo nodo con el archivo
-                        arch = (Fichero) msg.getContentObject();
-                        arch2 = (Fichero) catalogo.get(arch.getNombre());
+                        arch  = (Fichero) msg.getContentObject();
+                        arch2 = catalogo.get(arch.getNombre());
                         arch2.setAHolder(arch.getOwner());
                         catalogo.put(arch.getNombre(),arch2);
                     }
@@ -366,11 +379,9 @@ public class SuperNodoAgent extends Agent {
             msg = myAgent.receive(mt);
             if (msg != null) {
                 // Mensaje recibido.
-                // Archivo pedido
                 try {
-                    // En el mensaje se encuentra la tabla de Hash
-                    Hashtable contenido = (Hashtable)msg.getContentObject();
-                    // Esta sera nuestra nueva tabla de hash
+                    // Se reemplaza la tabla de la informacion de los archivos con la que llego
+                    Hashtable<String, Fichero> contenido = (Hashtable<String, Fichero>) msg.getContentObject();
                     catalogo = contenido;
                     System.out.println("Tabla de Hash Actualizada.");
                 } catch (Exception e) {
@@ -383,7 +394,7 @@ public class SuperNodoAgent extends Agent {
     }
 
     /* Metodo ActualizarNodos
-       Este metodo se encarga de actualizar la Tabla de Hash de nodos debido un
+       Este behaviour se encarga de actualizar la Tabla de Hash de nodos debido un
        registro de un nuevo nodo
        */
     private class ActualizarNodos extends CyclicBehaviour {
@@ -397,13 +408,12 @@ public class SuperNodoAgent extends Agent {
             msg = myAgent.receive(mt);
             if (msg != null) {
                 // Mensaje recibido.
-                // Archivo pedido
                 try {
                     // En el mensaje se encuentra la tabla de Hash de nodos
-                    Hashtable nuevosNodos = (Hashtable)msg.getContentObject();
                     // Esta sera nuestra nueva tabla de hash de nodos
+                    Hashtable<AID, Cliente> nuevosNodos = (Hashtable<AID, Cliente>)msg.getContentObject();
                     nodos = nuevosNodos;
-                    System.out.println("Tabla de Hash de NODOS  Actualizada.");
+                    System.out.println("Tabla de Hash de NODOS Actualizada.");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -413,4 +423,31 @@ public class SuperNodoAgent extends Agent {
         }
     }
 
+    public String HashForFile(String filePath) {
+        StringBuffer hexString = new StringBuffer();
+
+        try {
+            MessageDigest md    = MessageDigest.getInstance("SHA-256");
+            FileInputStream fis = new FileInputStream(filePath);
+
+            byte[] dataBytes = new byte[1024];
+
+            int nread = 0; 
+            while ((nread = fis.read(dataBytes)) != -1) {
+                md.update(dataBytes, 0, nread);
+            };
+            byte[] mdbytes = md.digest();
+
+            for (int i = 0; i < mdbytes.length; i++) {
+                hexString.append(Integer.toHexString(0xFF & mdbytes[i]));
+            }
+        } catch(NoSuchAlgorithmException nsae) {
+            nsae.printStackTrace();
+        } catch(FileNotFoundException fnfe) {
+            fnfe.printStackTrace();
+        } catch(IOException ioe) {
+            ioe.printStackTrace();
+        }
+        return hexString.toString();
+    }
 }
