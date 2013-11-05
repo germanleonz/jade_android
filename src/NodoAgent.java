@@ -17,7 +17,7 @@ import java.util.ArrayList;
 public class NodoAgent extends Agent {
     private String targetFileName;
     private ArrayList<AID> superNodos;
-    String nodename ;
+    String nodename;
 
     // GUI a través de la cual el cliente podra interactuar :P
     private NodoAgentGUI myGui;
@@ -32,6 +32,8 @@ public class NodoAgent extends Agent {
 
 	addBehaviour(new SeekSuperNodes());
 	addBehaviour(new AskForHolders());
+    addBehaviour(new SendFile());
+    addBehaviour(new ReceiveFile());
 
         File folder = new File("./"+nodename+":Files_JADE");
         if (!folder.exists()) {
@@ -127,6 +129,7 @@ public class NodoAgent extends Agent {
                         /*Accion para seleccionar un holder confiable*/
 
                         AID holder = (AID)holders.getFirst();
+                        System.out.println("El archivo lo tiene"+holder.getName());
                         ACLMessage inform = new ACLMessage(ACLMessage.INFORM_IF);
                         inform.addReceiver(holder);
                         inform.setContent(file.getNombre());
@@ -158,6 +161,52 @@ public class NodoAgent extends Agent {
         }
     }
 
+    /**
+     This is invoked by the GUI when the user adds a new file for upload
+   */
+  public void upload(final String path) {
+    addBehaviour(new OneShotBehaviour() {
+      public void action() {
+        MessageTemplate mt;
+        Fichero f;
+        String nombre;
+        System.out.println("Quiero subir el archivo : "+path);
+        
+        // Le aviso al superNodo que tengo un nuevo archivo, y le envio
+        // el objeto de tipo Archivo
+        String[] split = path.split("/");
+        //hacemos split 
+        ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
+        cfp.addReceiver(superNodos.get(0));   
+        f = new Fichero(getAID(),split[split.length-1]);
+
+        //Copiamos el archivo a la carpeta de jade que creamos
+        FileInputStream is = null;
+        FileOutputStream os = null;
+        try {
+            is = new FileInputStream(path);
+            os = new FileOutputStream("./"+nodename+":Files_JADE/"+f.getNombre());
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = is.read(buffer)) > 0) {
+                os.write(buffer, 0, length);
+            }
+            is.close();
+            os.close();
+            cfp.setContentObject(f);
+            cfp.setConversationId("NuevoArchivo");
+            cfp.setReplyWith("request"+System.currentTimeMillis()); // Unique value
+            myAgent.send(cfp);
+            mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
+                MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+        }catch (Exception io){
+            io.printStackTrace();
+            
+        }
+        
+      }
+    } );
+  }
 
 
     private class SendFile extends CyclicBehaviour {
@@ -166,7 +215,7 @@ public class NodoAgent extends Agent {
             ACLMessage msg = myAgent.receive(mt);
             if(msg != null){
                 String nombre = msg.getContent();
-                File arch = new File("./"+nodename+"Files_JADE/"+nombre);
+                File arch = new File("./"+nodename+":Files_JADE/"+nombre);
                 if(arch.exists()){
                     FileInputStream in = null;
                     LinkedList<Integer> lista= new LinkedList<Integer>();
@@ -185,17 +234,21 @@ public class NodoAgent extends Agent {
                         myAgent.doDelete();
                     }
                 
-                Object[] fileContent= lista.toArray();
-                byte[] bytefileContent= new byte[lista.size()];
-                for(int i=0; i<lista.size(); i++){
-                    bytefileContent[i]= (((Integer)fileContent[i]).byteValue());
+                    System.out.println("Enviando archivo "+nombre);
+
+                    Object[] fileContent= lista.toArray();
+                    byte[] bytefileContent= new byte[lista.size()];
+                    for(int i=0; i<lista.size(); i++){
+                        bytefileContent[i]= (((Integer)fileContent[i]).byteValue());
+                    }
+
+                    ACLMessage reply = msg.createReply();
+                    reply.setPerformative(ACLMessage.REQUEST);
+                    //EL byteSequenceContent sobreescribe el Content por eso usamos otro parametro
+                    reply.addUserDefinedParameter("file-name", nombre);
+                    reply.setByteSequenceContent(bytefileContent);
+                    myAgent.send(reply);
                 }
-                ACLMessage reply = msg.createReply();
-                reply.setPerformative(ACLMessage.REQUEST);
-                reply.setByteSequenceContent(bytefileContent);
-                reply.setContent(nombre);
-                myAgent.send(reply);
-            }
 
             }else{
                 block();
@@ -204,53 +257,23 @@ public class NodoAgent extends Agent {
           }
     }
     
-   /**
-     This is invoked by the GUI when the user adds a new file for upload
-   */
-  public void upload(final String title) {
-    addBehaviour(new OneShotBehaviour() {
-      public void action() {
-        MessageTemplate mt;
-        Fichero f;
-        System.out.println("Quiero subir el archivo : "+title);
-        
-        // Le aviso al superNOdo que tengo un nuevo archivo, y le envio
-        // el objeto de tipo Archivo
-        ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
-        cfp.addReceiver(superNodos.get(0));   
-        f = new Fichero(getAID(),title);
-        
-        try {
-        	cfp.setContentObject(f);
-        }catch (Exception io){
-            io.printStackTrace();
-        }
-        
-        cfp.setConversationId("NuevoArchivo");
-        cfp.setReplyWith("request"+System.currentTimeMillis()); // Unique value
-        myAgent.send(cfp);
-        mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
-                MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-      }
-    } );
-  }
-
     private class ReceiveFile extends CyclicBehaviour {
     public void action() {
         MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
         ACLMessage msg = myAgent.receive(mt);
         if(msg != null){
-            String arch = "./"+nodename+"Files_JADE/"+msg.getContent();
+            String arch = "./"+nodename+":Files_JADE/"+msg.getUserDefinedParameter("file-name");
             FileOutputStream out = null;
             byte[] fileContent = msg.getByteSequenceContent();
-            // Almacenar contenido                        
             try{
+            // Almacenar contenido                        
+           
                 out = new FileOutputStream(arch);        
-                int cont=0;
                 out.write(fileContent);
+                out.close();
                       
             }catch(Exception e ){
-                System.out.println("error");
+                e.printStackTrace();
             }
             
         }else{
