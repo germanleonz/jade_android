@@ -1,5 +1,6 @@
 
 import jade.core.Agent;
+import java.util.Enumeration;
 import jade.core.behaviours.*;
 import jade.core.AID;
 import jade.lang.acl.ACLMessage;
@@ -86,6 +87,7 @@ public class SuperNodoAgent extends Agent {
         addBehaviour(new Propagate());
         addBehaviour(new Registro());
         addBehaviour(new ActualizarConfiabilidad());
+        addBehaviour(new AskPublicaciones());
     }
 
     /*
@@ -131,7 +133,6 @@ public class SuperNodoAgent extends Agent {
                 for (int i = 0; i < superNodos.size(); i++) {
 
                     ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
-                    cfp.setConversationId("actualizarCatalogo");
                     cfp.addReceiver(superNodos.get(i));
                     try {
                         cfp.setContentObject(nodos);
@@ -618,4 +619,59 @@ public class SuperNodoAgent extends Agent {
             }
         }
     }
+    
+    /*
+    	Metodo que responde a las solicitudes de los clientes que desean saber
+    	sus publicaciones
+    */
+    private class AskPublicaciones extends CyclicBehaviour {
+
+        MessageTemplate mt;
+        ACLMessage msg;
+
+        public void action() {
+            mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("getmyfiles"));
+            msg = myAgent.receive(mt);
+            if (msg != null) {
+                // Mensaje recibido.
+                try {
+                	String cliente = msg.getSender().getName();
+                	System.out.println(cliente+"Quiere saber sus publicaciones");
+                    
+                    LinkedList publicaciones = new LinkedList();
+                    //Obtener todas las publicaciones de ese cliente
+                    Enumeration e = catalogo.elements();
+					Fichero f;
+					while( e.hasMoreElements() ){
+						f = (Fichero) e.nextElement();
+						if (f.getOwner().equals(cliente)){
+							publicaciones.add(f);
+							
+							System.out.println( "	->" + f.getNombre() );
+						}
+					}
+					
+					//Le envio al cliente la lista de sus publicaciones
+					ACLMessage mensaje = new ACLMessage(ACLMessage.INFORM);
+                    mensaje.setConversationId("yourFiles");
+                    mensaje.addReceiver(msg.getSender());
+                    try {
+                        mensaje.setContentObject(publicaciones);
+                    } catch (Exception io) {
+                        io.printStackTrace();
+                    }
+                    myAgent.send(mensaje);
+                    
+                    
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                block();
+            }
+        }
+    }
+    
 }

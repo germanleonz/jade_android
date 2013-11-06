@@ -8,6 +8,8 @@ import java.awt.event.*;
 import java.io.File;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.DefaultListModel;
+import java.util.LinkedList;
 
 
 /**
@@ -428,12 +430,12 @@ public class NodoAgentGUI extends javax.swing.JFrame {
 
         LabelSeleccioneArchivo.setText("Seleccione un archivo : ");
 
-        ListaMisArchivos.setModel(new javax.swing.AbstractListModel() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public Object getElementAt(int i) { return strings[i]; }
-        });
-        jScrollPane3.setViewportView(ListaMisArchivos);
+       // ListaMisArchivos.setModel(new javax.swing.AbstractListModel() {
+       //     String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+       //     public int getSize() { return strings.length; }
+       //     public Object getElementAt(int i) { return strings[i]; }
+       // });
+       
 
         publico.setText("Público");
 
@@ -445,9 +447,18 @@ public class NodoAgentGUI extends javax.swing.JFrame {
         btnPermisos.setText("Aceptar");
         btnPermisos.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                
+                LinkedList<Fichero> p = myAgent.getPublicaciones();
+                DefaultListModel modelo = new DefaultListModel();
+				Fichero f ;
+                for(int i=0;i<p.size();i++){
+                	f=p.get(i);
+                	modelo.addElement(f.getNombre()+" - "+f.getPermisos());
+                }
+                ListaMisArchivos.setModel(modelo);
+                jScrollPane3.setViewportView(ListaMisArchivos);
             }
         });
+         
 
         LabelCambiosOk.setText("Los cambios se han efectuado correctamente ");
 

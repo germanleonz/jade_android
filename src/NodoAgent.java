@@ -26,6 +26,10 @@ public class NodoAgent extends Agent {
     int capacidadAct; // capacidad disponible
     // GUI a través de la cual el cliente podra interactuar :P
     private NodoAgentGUI myGui;
+    
+    //LinkedList de mis archivos publicados
+    private LinkedList misPublicaciones;
+    
 
     protected void setup() {
 
@@ -48,6 +52,9 @@ public class NodoAgent extends Agent {
             }
         };
         addBehaviour(myAMSSubscriber);
+        
+        //Inicializo mis publicaciones
+        misPublicaciones = new LinkedList();
 
         System.out.println("Nodo-agent " + getAID().getName() + " is ready.");
         nodename = getAID().getName().substring(0, getAID().getName().indexOf("@"));
@@ -67,12 +74,17 @@ public class NodoAgent extends Agent {
             addBehaviour(new SendFile());
             addBehaviour(new ReceiveFile());
             addBehaviour(new Replicar());
+            addBehaviour(new waitMyFiles());
 
             File folder = new File("./" + nodename + ":Files_JADE");
             if (!folder.exists()) {
                 folder.mkdir();
             }
 
+			// Si el nodo ya habia realizado publicaciones y cayo, debe 
+			// actualizar su tabla de publicaciones
+			getMyFiles();
+			
         } else {
             System.out.println("Debe especificar la capacidad maxima");
         }
@@ -435,4 +447,55 @@ public class NodoAgent extends Agent {
     //msg.addReceiver(superNodos.get(0));   
     //msg.setContentObject(sender);
     //myAgent.send(msg);
+    
+    /*
+    	Metodo llamado desde la GUI para obtener los archivos publicados
+    	por este nodo
+    */
+    private void getMyFiles() {
+        addBehaviour(new OneShotBehaviour() {
+            public void action() {
+            	System.out.println("Deseo mis archivos");
+                ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+                msg.addReceiver(superNodos.get(0));
+                msg.setConversationId("getmyfiles");
+                myAgent.send(msg);
+            }
+        });
+    }
+    
+    /*
+    	Metodo que espera un mensaje de respuesta de algun super nodo
+    	indicandome mis archivos publicados
+    */
+    private class waitMyFiles extends CyclicBehaviour {
+
+        public void action() {
+            MessageTemplate mt = MessageTemplate.and(
+            MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+            MessageTemplate.MatchConversationId("yourFiles"));
+            ACLMessage msg = myAgent.receive(mt);
+            if (msg != null) {
+                // Reply received
+                try {
+                	//Actualizo mi tabla de publicaciones
+                	System.out.println("Recibi mis archivos");
+                    misPublicaciones = (LinkedList) msg.getContentObject();
+                 
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
+    }
+    
+    /*
+    	Metodo que es llamado desde GUI para obtener las publicaciones
+    */
+    public LinkedList<Fichero> getPublicaciones(){
+    	return misPublicaciones;
+    }
+    
+    
 }
