@@ -5,13 +5,15 @@ import jade.core.AID;
 public class Fichero implements Serializable {
 
     // Usuario con el archivo original
-    private String owner ;
+    private AID owner ;
     // Permisos que posee el archivo
     private boolean permisos;
     // Usuarios que poseen el archivo
     private LinkedList<AID> holders ;
     // Nombre del archivo
     private String nombre;
+    // Tamano del archivo
+    private long tam;
 
 
     /*
@@ -21,19 +23,20 @@ public class Fichero implements Serializable {
         permisos = true;
     }
     
-    public Fichero(AID creador,String fileName){
+    public Fichero(AID creador,String fileName,long tamano){
     	permisos = true;
-    	owner    = creador.getName();
+    	owner    = creador;
     	nombre   = fileName;
     	holders  = new LinkedList<AID>();
     	holders.add(creador);
+        tam = tamano;
     }
 
-    public String getOwner() {
+    public AID getOwner() {
         return owner;
     }
 
-    public void setOwner(String owner) {
+    public void setOwner(AID owner) {
         this.owner = owner;
     }
 
@@ -63,6 +66,10 @@ public class Fichero implements Serializable {
 
     public void setNombre(String nombre){
         this.nombre = nombre;
+    }
+
+    public long getTam(){
+        return tam;
     }
   
 }

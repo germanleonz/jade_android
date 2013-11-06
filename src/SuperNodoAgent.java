@@ -228,7 +228,7 @@ public class SuperNodoAgent extends Agent {
                     reply.setPerformative(ACLMessage.INFORM);
                     reply.setConversationId("holders");
                     try{
-                        reply.addUserDefinedParameter("nombreArchivo". fileName);
+                        reply.addUserDefinedParameter("nombreArchivo", fileName);
                         reply.setContentObject(mejorHolder.getClientAID());
                     } catch (Exception io) {
                         io.printStackTrace();
@@ -317,6 +317,8 @@ public class SuperNodoAgent extends Agent {
                 Fichero arch2;
                 try {
                     if(msg.getConversationId().equalsIgnoreCase("NuevoArchivo")){
+                       arch = (Fichero)msg.getContentObject();
+
                         /** Espacio para  actualizar */
                         //Nuevo Archivo se recibe desde el cliente y se guarda
 
@@ -324,13 +326,24 @@ public class SuperNodoAgent extends Agent {
 
                                 Replicar:
                                 1. Buscar 2k-1 replicas
-                                2. Enviar archivo a las replicas
-                                3. Verificar checksum:
+                                2. Enviar lista de replicas al nodo
 
                         */
+                       System.out.println("tam " + arch.getTam());
+                       AID[] replicas = findReplicas(arch.getTam());
+                       ACLMessage reply = msg.createReply();
 
-                        arch = (Fichero)msg.getContentObject();
-                        catalogo.put(arch.getNombre(),arch);
+                       reply.setPerformative(ACLMessage.INFORM);
+                       reply.setConversationId("lista replicas");
+                       try{
+                           reply.addUserDefinedParameter("nombreArchivo", arch.getNombre());
+                           reply.setContentObject(replicas);
+                       } catch (Exception io) {
+                           io.printStackTrace();
+                       }
+                       myAgent.send(reply);
+                       catalogo.put(arch.getNombre(),arch);
+
                     }else if(msg.getConversationId().equalsIgnoreCase("NuevoPermiso")){
                         //Cambio de Permisos de un archivo se recibe el archivo desde el cliente
                         arch  = (Fichero) msg.getContentObject();
@@ -461,5 +474,34 @@ public class SuperNodoAgent extends Agent {
             ioe.printStackTrace();
         }
         return hexString.toString();
+    }
+
+    /* 
+       Metodos usados para replicar
+    */
+    
+    /*
+       Este metodo se encarga de buscar las 2k-1 replicas con mas capacidad
+    */
+    private AID[] findReplicas(long tam){
+
+        int count = 0;
+        int k = 2;
+        AID[] reps = new AID[(2*k)-1];
+        for (AID r: reps)
+            r = null;
+        
+        for (AID key: nodos.keySet()) {
+            Cliente cliaux = nodos.get(key);
+
+            if (cliaux.getCapacidad() > tam){
+                reps[count] = cliaux.getClientAID();
+                count++;
+            }
+            if (count == (2*k)-1 )
+                break;
+        }
+
+        return reps;
     }
 }
