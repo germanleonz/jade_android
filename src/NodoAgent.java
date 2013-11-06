@@ -152,29 +152,31 @@ public class NodoAgent extends Agent {
             if (reply != null) {
                 // Reply received
                 try{
-                    // This is an offer 
-                    String nombreArchivo = reply.getUserDefinedParameter("nombreArchivo");
-                    AID mejorHolder      = (AID) reply.getContentObject();
-
-                    ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
-                    inform.addReceiver(mejorHolder);
-                    inform.setContent(nombreArchivo);
-                    System.out.println("El archivo lo tiene"+mejorHolder.getName());
-
-                    System.out.println("Solicitando " + nombreArchivo);
-                    inform.setConversationId("download-file");
-                    myAgent.send(inform);
-                    System.out.println("Solicitud enviada");
-
-
-                    if (reply.getPerformative() == ACLMessage.REFUSE) {
+                    //Revizamos permisos y que exista el archivo
+                    if (reply.getContent().equals("not-available")) {
                         System.out.println("Attempt failed archivo no encontrado");
                         myGui.visibleMensajeError();
+                    }else if(reply.getUserDefinedParameter("permisos").equals("false")){
+                        myGui.visibleMensajeError();
+                    }else{
+                        // This is an offer 
+                        String nombreArchivo = reply.getUserDefinedParameter("nombreArchivo");
+                        AID mejorHolder      = (AID) reply.getContentObject();
+
+                        ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
+                        inform.addReceiver(mejorHolder);
+                        inform.setContent(nombreArchivo);
+                        System.out.println("El archivo lo tiene"+mejorHolder.getName());
+
+                        System.out.println("Solicitando " + nombreArchivo);
+                        inform.setConversationId("download-file");
+                        myAgent.send(inform);
+                        System.out.println("Solicitud enviada");
                     }
+
                 }catch(Exception e){
                     e.printStackTrace();
                 }
-
             } else {
                 block();
             }
