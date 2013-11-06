@@ -307,6 +307,15 @@ public class NodoAgent extends Agent {
                     out.write(fileContent);
                     out.close();
 
+                    // Le aviso a un superNodo que todo funciono chevere con el
+                    // nodo sender para que este le aumente la confiabilidad
+                    ACLMessage mensaje = new ACLMessage(ACLMessage.INFORM);
+                    mensaje.setConversationId("descargaOK");
+                    mensaje.addReceiver(superNodos.get(0));   
+                    mensaje.setContentObject(msg.getSender());
+                    myAgent.send(mensaje);
+                    System.out.println("Informamos a superNodo -> DescargaOK");
+
                     // Notificar al super nodo cambio en la capacidad
                     if(msg.getConversationId().equalsIgnoreCase("replicar")){
                         msg = new ACLMessage(ACLMessage.REQUEST);
@@ -390,5 +399,18 @@ public class NodoAgent extends Agent {
             }
         }
     }
+
+
+
+   
+        // Le aviso a un superNodo que el nodo sender
+        // se cayo y hubo un error en la descarga
+        //ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+        //msg.setConversationId("descargaKO");
+        //msg.addReceiver(superNodos.get(0));   
+        //msg.setContentObject(sender);
+        //myAgent.send(msg);
+
+
 }
 

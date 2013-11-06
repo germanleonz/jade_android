@@ -58,6 +58,7 @@ public class SuperNodoAgent extends Agent {
         addBehaviour(new WhoHasFileServer());
         addBehaviour(new Propagate());
         addBehaviour(new Registro());
+        addBehaviour(new ActualizarConfiabilidad());
     }
 
     /*
@@ -102,6 +103,7 @@ public class SuperNodoAgent extends Agent {
                 for (int i = 0; i < superNodos.size(); i++) {
 
                     ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
+                    cfp.setConversationId("actualizarCatalogo");
                     cfp.addReceiver(superNodos.get(i));
                     try{
                         cfp.setContentObject(nodos); 
@@ -109,7 +111,7 @@ public class SuperNodoAgent extends Agent {
                         io.printStackTrace();
                     }
 
-                    cfp.setConversationId("registro");
+                    cfp.setConversationId("actualizarNodos");
                     myAgent.send(cfp);
                 }
             } else {
@@ -274,6 +276,7 @@ public class SuperNodoAgent extends Agent {
                     System.out.println("Respondiendo a solicitud del catalogo");
                     reply = msg.createReply();
                     reply.setPerformative(ACLMessage.PROPAGATE);
+                    reply.setConversationId("actualizarCatalogo");
                     reply.setContentObject(catalogo);
                     myAgent.send(reply);
                     superNodos.add(msg.getSender());
@@ -383,7 +386,7 @@ public class SuperNodoAgent extends Agent {
                         ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
                         cfp.addReceiver(superNodos[i]);
                         cfp.setContentObject(catalogo);
-                        cfp.setConversationId("propagate");
+                        cfp.setConversationId("actualizarCatalogo");
                         cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
                         myAgent.send(cfp);
                         System.out.println(superNodos[i].getName());
@@ -410,7 +413,9 @@ public class SuperNodoAgent extends Agent {
         ACLMessage msg;
 
         public void action() {
-            mt  = MessageTemplate.MatchPerformative(ACLMessage.PROPAGATE);
+            mt  = MessageTemplate.and(  
+                    MessageTemplate.MatchPerformative(ACLMessage.PROPAGATE),
+                    MessageTemplate.MatchConversationId("actualizarCatalogo"));
             msg = myAgent.receive(mt);
             if (msg != null) {
                 // Mensaje recibido.
@@ -439,7 +444,7 @@ public class SuperNodoAgent extends Agent {
         public void action() {
             mt  = MessageTemplate.and(  
                     MessageTemplate.MatchPerformative(ACLMessage.PROPAGATE),
-                    MessageTemplate.MatchConversationId("registro"));
+                    MessageTemplate.MatchConversationId("actualizarNodos"));
             msg = myAgent.receive(mt);
             if (msg != null) {
                 // Mensaje recibido.
@@ -514,4 +519,61 @@ public class SuperNodoAgent extends Agent {
 
         return reps;
     }
+
+
+    /*
+        Behaviour que recibe las notificaciones de los clientes cuando una descarga
+        se realiza satisfactoriamente :)
+    */
+    private class ActualizarConfiabilidad extends CyclicBehaviour {
+        MessageTemplate mt;
+        ACLMessage msg;
+
+        public void action() {
+            mt  = MessageTemplate.and(  
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("descargaOK"));
+            msg = myAgent.receive(mt);
+            if (msg != null) {
+                // Mensaje recibido.
+                try {
+                    // En el mensaje se encuentra el cliente que envio el
+                    // archivo y todo funciono bien
+                    AID sender = (AID)msg.getContentObject();
+                    Cliente client = nodos.get(sender);
+                    int confiabilidad = client.getConfiabilidad();
+                    client.setConfiabilidad(confiabilidad++);
+                    // Colocamos el cliente con la confiabilidad aumentada
+                    nodos.put(sender,client);
+
+                    // Actualizacion de tabla de hash de super Nodos
+                    //  Le enviamos la nueva Tabla de Hash de nodos a cada SuperNodo
+                    for (int i = 0; i < superNodos.size(); i++) {
+
+                        ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
+                        cfp.addReceiver(superNodos.get(i));
+                        try{
+                            cfp.setContentObject(nodos); 
+                        }catch (Exception io) {
+                            io.printStackTrace();
+                        }
+
+                        cfp.setConversationId("actualizarNodos");
+                        myAgent.send(cfp);
+                    }
+
+                   
+                    System.out.println("Actualizada confiabilidad (Positiva)");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                block();
+            }
+        }
+    }
+
+
+
 }
+
