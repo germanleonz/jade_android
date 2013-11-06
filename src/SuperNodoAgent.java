@@ -228,7 +228,7 @@ public class SuperNodoAgent extends Agent {
                     reply.setPerformative(ACLMessage.INFORM);
                     reply.setConversationId("holders");
                     try{
-                        reply.addUserDefinedParameter("nombreArchivo",fileName);
+                        reply.addUserDefinedParameter("nombreArchivo", fileName);
                         reply.setContentObject(mejorHolder.getClientAID());
                     } catch (Exception io) {
                         io.printStackTrace();
@@ -351,11 +351,17 @@ public class SuperNodoAgent extends Agent {
                         //Actualizar la lista de holders
                         arch.setHolders(arch2.getHolders());
                         catalogo.put(arch.getNombre(),arch);
+                    }else if(msg.getConversationId().equalsIgnoreCase("NuevaCapacidad")){
+                        int tamArch =  Integer.parseInt(msg.getUserDefinedParameter("tamArch"));
+                        AID nodo = (AID) msg.getContentObject();
+                        int capacidad = nodos.get(nodo).getCapacidad();
+                        nodos.get(nodo).setCapacidad(capacidad - tamArch);
+                        System.out.println("Actualizando capacidad del nodo: " + nodo); 
                     }else{
                         //Nuevo nodo con el archivo
                         arch  = (Fichero) msg.getContentObject();
                         arch2 = catalogo.get(arch.getNombre());
-                        arch2.setOwner(arch.getOwner());
+                        arch2.setAHolder(arch.getOwner());
                         catalogo.put(arch.getNombre(),arch2);
                     }
 

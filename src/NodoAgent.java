@@ -305,6 +305,17 @@ public class NodoAgent extends Agent {
                     out.write(fileContent);
                     out.close();
 
+                    // Notificar al super nodo cambio en la capacidad
+                    if(msg.getConversationId().equalsIgnoreCase("replicar")){
+                        msg = new ACLMessage(ACLMessage.REQUEST);
+                        msg.setConversationId("NuevaCapacidad");
+                        msg.addReceiver(superNodos.get(0));   
+                        msg.setContentObject(getAID());
+                        File f = new File(arch);
+                        msg.addUserDefinedParameter("tamArch",String.valueOf(f.length()));
+                        myAgent.send(msg);
+                        System.out.println("Actualizar capacidad");
+                    }
                 }catch(Exception e ){
                     e.printStackTrace();
                 }
