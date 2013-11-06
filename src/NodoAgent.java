@@ -1,3 +1,4 @@
+
 import jade.core.Agent;
 import jade.core.AID;
 import java.io.File;
@@ -13,20 +14,43 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.Map;
+import jade.domain.introspection.*;
 
 public class NodoAgent extends Agent {
+
     private String targetFileName;
     private ArrayList<AID> superNodos;
     String nodename;
     String capacidadMax;  // capacidad con la que inicia
     int capacidadAct; // capacidad disponible
-
     // GUI a través de la cual el cliente podra interactuar :P
     private NodoAgentGUI myGui;
 
     protected void setup() {
-        System.out.println("Nodo-agent "+getAID().getName()+" is ready.");
-        nodename = getAID().getName().substring(0,getAID().getName().indexOf("@"));
+
+
+        AMSSubscriber myAMSSubscriber = new AMSSubscriber() {
+            protected void installHandlers(Map handlers) {
+                //Asociar el evento solo a agentes muertos
+                EventHandler terminationsHandler = new EventHandler() {
+                    public void handle(Event ev) {
+                        DeadAgent da = (DeadAgent) ev;
+                        System.out.println("Dead agent " + da.getAgent().getName());
+                        AID agente = da.getAgent();
+                        if (superNodos.contains(agente)) {
+                            superNodos.remove(agente);
+                        }
+                    }
+                };
+                handlers.put(IntrospectionVocabulary.DEADAGENT,
+                        terminationsHandler);
+            }
+        };
+        addBehaviour(myAMSSubscriber);
+
+        System.out.println("Nodo-agent " + getAID().getName() + " is ready.");
+        nodename = getAID().getName().substring(0, getAID().getName().indexOf("@"));
         capacidadAct = 0;
         superNodos = new ArrayList();
         // Get the title of the book to buy as a start-up argument
@@ -44,13 +68,12 @@ public class NodoAgent extends Agent {
             addBehaviour(new ReceiveFile());
             addBehaviour(new Replicar());
 
-            File folder = new File("./"+nodename+":Files_JADE");
+            File folder = new File("./" + nodename + ":Files_JADE");
             if (!folder.exists()) {
                 folder.mkdir();
             }
 
-
-        }else{
+        } else {
             System.out.println("Debe especificar la capacidad maxima");
         }
     }
@@ -58,15 +81,15 @@ public class NodoAgent extends Agent {
     // Put agent clean-up operations here
     protected void takeDown() {
         // Printout a dismissal message
-        System.out.println("Nodo-agent "+getAID().getName()+" terminating.");
+        System.out.println("Nodo-agent " + getAID().getName() + " terminating.");
     }
 
     //Funcion privada que revisa si los nodos aun estan activos
     //No esta funcionando 
     private void getSuperNode() throws Exception {
-        Object cc = getContainerController().getPlatformController(); 
+        Object cc = getContainerController().getPlatformController();
         System.out.println(cc);
-        for(int i=0;i < superNodos.size(); ++i){
+        for (int i = 0; i < superNodos.size(); ++i) {
             //System.out.println(this.superNodos[i].getLocalName());
             //System.out.println(cc.getAgent(this.superNodos[i].getLocalName()));
             //System.out.println("El HAP"+this.superNodos[i].getHap());
@@ -74,10 +97,11 @@ public class NodoAgent extends Agent {
     }
 
     /**
-      Este behaviour se encarga de encontrar a todos los supernodos
-      y de notificarle mi nacimiento al primero de la lista
-      */
+     * Este behaviour se encarga de encontrar a todos los supernodos y de
+     * notificarle mi nacimiento al primero de la lista
+     */
     private class SeekSuperNodes extends Behaviour {
+
         public void action() {
             DFAgentDescription template = new DFAgentDescription();
             ServiceDescription sd = new ServiceDescription();
@@ -86,12 +110,12 @@ public class NodoAgent extends Agent {
             try {
                 //  Buscamos a todos los SuperNodos
                 System.out.println("Imprimiendo lista de supernodos que encontre...");
-                DFAgentDescription[] result = DFService.search(myAgent, template); 
+                DFAgentDescription[] result = DFService.search(myAgent, template);
                 superNodos = new ArrayList<AID>();
                 for (int i = 0; i < result.length; ++i) {
                     superNodos.add(result[i].getName());
                     System.out.println(superNodos.get(i).getName());
-                    if (i==0) {
+                    if (i == 0) {
                         // Me registro y le envio una notificacion al 
                         // primer supernodo que encuentre
                         System.out.println("Me registro!");
@@ -103,8 +127,7 @@ public class NodoAgent extends Agent {
                         myAgent.send(cfp);
                     }
                 }
-            }
-            catch (FIPAException fe) {
+            } catch (FIPAException fe) {
                 fe.printStackTrace();
             }
 
@@ -116,28 +139,29 @@ public class NodoAgent extends Agent {
     }
 
     /**
-      This is invoked by the GUI when the user adds a new file for search
-      */
+     * This is invoked by the GUI when the user adds a new file for search
+     */
     public void AskHolders(final String title) {
         addBehaviour(new OneShotBehaviour() {
             public void action() {
                 MessageTemplate mt;
-                System.out.println("Quiero buscar el archivo : "+title);
+                System.out.println("Quiero buscar el archivo : " + title);
                 // Send the cfp to all sellers
                 ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
                 cfp.addReceiver(superNodos.get(0));
                 cfp.setContent(title);
                 cfp.setConversationId("seek-holder");
-                cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
+                cfp.setReplyWith("cfp" + System.currentTimeMillis()); // Unique value
                 myAgent.send(cfp);
                 mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
-                    MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+                        MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
             }
-        } );
+        });
     }
 
     private class AskForHolders extends Behaviour {
-        private String fileHolder; 
+
+        private String fileHolder;
         private MessageTemplate mt;
         private int step = 0;
         private AID holder = null;
@@ -151,22 +175,22 @@ public class NodoAgent extends Agent {
             ACLMessage reply = myAgent.receive(mt);
             if (reply != null) {
                 // Reply received
-                try{
+                try {
                     //Revizamos permisos y que exista el archivo
                     if (reply.getContent().equals("not-available")) {
                         System.out.println("Attempt failed archivo no encontrado");
                         myGui.visibleMensajeError();
-                    }else if(reply.getUserDefinedParameter("permisos").equals("false")){
+                    } else if (reply.getUserDefinedParameter("permisos").equals("false")) {
                         myGui.visibleMensajeError();
-                    }else{
+                    } else {
                         // This is an offer 
                         String nombreArchivo = reply.getUserDefinedParameter("nombreArchivo");
-                        AID mejorHolder      = (AID) reply.getContentObject();
+                        AID mejorHolder = (AID) reply.getContentObject();
 
                         ACLMessage inform = new ACLMessage(ACLMessage.INFORM);
                         inform.addReceiver(mejorHolder);
                         inform.setContent(nombreArchivo);
-                        System.out.println("El archivo lo tiene"+mejorHolder.getName());
+                        System.out.println("El archivo lo tiene" + mejorHolder.getName());
 
                         System.out.println("Solicitando " + nombreArchivo);
                         inform.setConversationId("download-file");
@@ -174,13 +198,14 @@ public class NodoAgent extends Agent {
                         System.out.println("Solicitud enviada");
                     }
 
-                }catch(Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             } else {
                 block();
             }
         }
+
         public boolean done() {
             if (holder == null) {
                 //System.out.println("Attempt failed: "+targetFileName+" not available for sale");
@@ -190,36 +215,36 @@ public class NodoAgent extends Agent {
     }
 
     /**
-      This is invoked by the GUI when the user adds a new file for upload
-      */
+     * This is invoked by the GUI when the user adds a new file for upload
+     */
     public void upload(final String path) {
         addBehaviour(new OneShotBehaviour() {
             public void action() {
                 MessageTemplate mt;
                 Fichero f;
                 String nombre;
-                System.out.println("Quiero subir el archivo : "+path);
+                System.out.println("Quiero subir el archivo : " + path);
 
                 // Le aviso al superNodo que tengo un nuevo archivo, y le envio
                 // el objeto de tipo Archivo
                 String[] split = path.split("/");
                 //hacemos split 
                 ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
-                cfp.addReceiver(superNodos.get(0));   
-                File file =new File(path);
-                f = new Fichero(getAID(),split[split.length-1],file.length());
+                cfp.addReceiver(superNodos.get(0));
+                File file = new File(path);
+                f = new Fichero(getAID(), split[split.length - 1], file.length());
 
                 // Le aviso al superNodo que tengo un nuevo archivo, y le envio
                 // el objeto de tipo Archivo
                 cfp = new ACLMessage(ACLMessage.REQUEST);
-                cfp.addReceiver(superNodos.get(0));   
+                cfp.addReceiver(superNodos.get(0));
 
                 //Copiamos el archivo a la carpeta de jade que creamos
                 FileInputStream is = null;
                 FileOutputStream os = null;
                 try {
                     is = new FileInputStream(path);
-                    os = new FileOutputStream("./"+nodename+":Files_JADE/"+f.getNombre());
+                    os = new FileOutputStream("./" + nodename + ":Files_JADE/" + f.getNombre());
                     byte[] buffer = new byte[1024];
                     int length;
                     while ((length = is.read(buffer)) > 0) {
@@ -229,32 +254,33 @@ public class NodoAgent extends Agent {
                     os.close();
                     cfp.setContentObject(f);
                     cfp.setConversationId("NuevoArchivo");
-                    cfp.setReplyWith("request"+System.currentTimeMillis()); // Unique value
+                    cfp.setReplyWith("request" + System.currentTimeMillis()); // Unique value
                     myAgent.send(cfp);
                     mt = MessageTemplate.and(MessageTemplate.MatchConversationId("seek-holder"),
                             MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-                }catch (Exception io){
+                } catch (Exception io) {
                     io.printStackTrace();
 
                 }
 
             }
-        } );
+        });
     }
 
     private class SendFile extends CyclicBehaviour {
+
         public void action() {
             MessageTemplate mt = MessageTemplate.and(
                     MessageTemplate.MatchPerformative(ACLMessage.INFORM),
                     MessageTemplate.MatchConversationId("download-file"));
             ACLMessage msg = myAgent.receive(mt);
-            if(msg != null){
+            if (msg != null) {
                 String nombre = msg.getContent();
-                File arch = new File("./"+nodename+":Files_JADE/"+nombre);
+                File arch = new File("./" + nodename + ":Files_JADE/" + nombre);
                 System.out.println("Solicitaron archivo " + nombre);
-                if(arch.exists()){
+                if (arch.exists()) {
                     FileInputStream in = null;
-                    LinkedList<Integer> lista= new LinkedList<Integer>();
+                    LinkedList<Integer> lista = new LinkedList<Integer>();
                     try {
                         in = new FileInputStream(arch);
                         int c;
@@ -265,17 +291,17 @@ public class NodoAgent extends Agent {
                         }
                     } catch (Exception e) {
                         System.err.println(e);
-                    }catch(OutOfMemoryError b){
+                    } catch (OutOfMemoryError b) {
                         System.out.println("Error: El archivo sobrepasa el limite de tamaño");
                         myAgent.doDelete();
                     }
 
-                    System.out.println("Enviando archivo "+nombre);
+                    System.out.println("Enviando archivo " + nombre);
 
-                    Object[] fileContent= lista.toArray();
-                    byte[] bytefileContent= new byte[lista.size()];
-                    for(int i=0; i<lista.size(); i++){
-                        bytefileContent[i]= (((Integer)fileContent[i]).byteValue());
+                    Object[] fileContent = lista.toArray();
+                    byte[] bytefileContent = new byte[lista.size()];
+                    for (int i = 0; i < lista.size(); i++) {
+                        bytefileContent[i] = (((Integer) fileContent[i]).byteValue());
                     }
 
                     ACLMessage reply = msg.createReply();
@@ -286,24 +312,25 @@ public class NodoAgent extends Agent {
                     myAgent.send(reply);
                 }
 
-            }else{
+            } else {
                 block();
             }
         }
     }
 
     private class ReceiveFile extends CyclicBehaviour {
+
         public void action() {
             MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
             ACLMessage msg = myAgent.receive(mt);
-            if (msg != null){
-                String arch = "./"+nodename+":Files_JADE/"+msg.getUserDefinedParameter("file-name");
+            if (msg != null) {
+                String arch = "./" + nodename + ":Files_JADE/" + msg.getUserDefinedParameter("file-name");
                 FileOutputStream out = null;
                 byte[] fileContent = msg.getByteSequenceContent();
-                try{
+                try {
                     // Almacenar contenido                        
 
-                    out = new FileOutputStream(arch);        
+                    out = new FileOutputStream(arch);
                     out.write(fileContent);
                     out.close();
 
@@ -311,23 +338,23 @@ public class NodoAgent extends Agent {
                     // nodo sender para que este le aumente la confiabilidad
                     ACLMessage mensaje = new ACLMessage(ACLMessage.INFORM);
                     mensaje.setConversationId("descargaOK");
-                    mensaje.addReceiver(superNodos.get(0));   
+                    mensaje.addReceiver(superNodos.get(0));
                     mensaje.setContentObject(msg.getSender());
                     myAgent.send(mensaje);
                     System.out.println("Informamos a superNodo -> DescargaOK");
 
                     // Notificar al super nodo cambio en la capacidad
-                    if(msg.getConversationId().equalsIgnoreCase("replicar")){
+                    if (msg.getConversationId().equalsIgnoreCase("replicar")) {
                         msg = new ACLMessage(ACLMessage.REQUEST);
                         msg.setConversationId("NuevaCapacidad");
-                        msg.addReceiver(superNodos.get(0));   
+                        msg.addReceiver(superNodos.get(0));
                         msg.setContentObject(getAID());
                         File f = new File(arch);
-                        msg.addUserDefinedParameter("tamArch",String.valueOf(f.length()));
+                        msg.addUserDefinedParameter("tamArch", String.valueOf(f.length()));
                         myAgent.send(msg);
                         System.out.println("Actualizar capacidad");
                     }
-                }catch(Exception e ){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 
@@ -339,7 +366,8 @@ public class NodoAgent extends Agent {
     }
 
     private class Replicar extends CyclicBehaviour {
-        public void action(){
+
+        public void action() {
             MessageTemplate mt = MessageTemplate.and(
                     MessageTemplate.MatchPerformative(ACLMessage.INFORM),
                     MessageTemplate.MatchConversationId("lista replicas"));
@@ -349,26 +377,26 @@ public class NodoAgent extends Agent {
                 ACLMessage msgRep = new ACLMessage(ACLMessage.REQUEST);
                 byte[] bytefileContent = null;
                 // Reply received
-                try{
+                try {
                     // This is an offer 
                     nombre = msg.getUserDefinedParameter("nombreArchivo");
-                    AID[] replicas      = (AID[]) msg.getContentObject();
+                    AID[] replicas = (AID[]) msg.getContentObject();
 
                     msgRep.setConversationId("replicar");
                     System.out.println("Replicando archivo " + nombre + "en los nodos");
-                    for (AID rep : replicas){
+                    for (AID rep : replicas) {
                         msgRep.addReceiver(rep);
                         System.out.println(rep);
                     }
-                }catch(Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
-                }         
+                }
 
-                File arch = new File("./"+nodename+":Files_JADE/"+nombre);
+                File arch = new File("./" + nodename + ":Files_JADE/" + nombre);
 
-                if(arch.exists()){
+                if (arch.exists()) {
                     FileInputStream in = null;
-                    LinkedList<Integer> lista= new LinkedList<Integer>();
+                    LinkedList<Integer> lista = new LinkedList<Integer>();
                     try {
                         in = new FileInputStream(arch);
                         int c;
@@ -379,38 +407,31 @@ public class NodoAgent extends Agent {
                         }
                     } catch (Exception e) {
                         System.err.println(e);
-                    }catch(OutOfMemoryError b){
+                    } catch (OutOfMemoryError b) {
                         System.out.println("Error: El archivo sobrepasa el limite de tamaño");
                         myAgent.doDelete();
                     }
 
-                    System.out.println("Enviando archivo "+nombre);
+                    System.out.println("Enviando archivo " + nombre);
 
-                    Object[] fileContent= lista.toArray();
-                    bytefileContent= new byte[lista.size()];
-                    for(int i=0; i<lista.size(); i++){
-                        bytefileContent[i]= (((Integer)fileContent[i]).byteValue());
+                    Object[] fileContent = lista.toArray();
+                    bytefileContent = new byte[lista.size()];
+                    for (int i = 0; i < lista.size(); i++) {
+                        bytefileContent[i] = (((Integer) fileContent[i]).byteValue());
                     }
                 }
 
-            msgRep.addUserDefinedParameter("file-name", nombre);
-            msgRep.setByteSequenceContent(bytefileContent);
-            myAgent.send(msgRep);
+                msgRep.addUserDefinedParameter("file-name", nombre);
+                msgRep.setByteSequenceContent(bytefileContent);
+                myAgent.send(msgRep);
             }
         }
     }
-
-
-
-   
-        // Le aviso a un superNodo que el nodo sender
-        // se cayo y hubo un error en la descarga
-        //ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-        //msg.setConversationId("descargaKO");
-        //msg.addReceiver(superNodos.get(0));   
-        //msg.setContentObject(sender);
-        //myAgent.send(msg);
-
-
+    // Le aviso a un superNodo que el nodo sender
+    // se cayo y hubo un error en la descarga
+    //ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+    //msg.setConversationId("descargaKO");
+    //msg.addReceiver(superNodos.get(0));   
+    //msg.setContentObject(sender);
+    //myAgent.send(msg);
 }
-
