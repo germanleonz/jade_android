@@ -24,7 +24,7 @@ public class SuperNodoAgent extends Agent {
     // Se almacenan los recursos y quienes lo poseen
     private Hashtable<String, Fichero> catalogo;
     // Se almacena los nodos y su confiabilidad
-    private Hashtable<AID, Cliente> nodos;
+    private Hashtable<String, Cliente> nodos;
     private ArrayList<AID> superNodos;
 
     /*
@@ -42,7 +42,11 @@ public class SuperNodoAgent extends Agent {
                         DeadAgent da = (DeadAgent) ev;
                         System.out.println("Nodo desaparecido " + da.getAgent().getName());
                         AID agente = da.getAgent();
-                        if (nodos.contains(agente)) {
+			/*System.out.println(nodos.toString());
+			System.out.println("--------------------------------");
+			System.out.println(agente);
+			System.out.println("Booleanos "+nodos.contains(agente.getName())+" Para el segundo "+superNodos.contains(agente));*/
+                        if (nodos.contains(agente.getName())) {
                             nodos.remove(agente);
                         } else if (superNodos.contains(agente)) {
                             superNodos.remove(agente);
@@ -56,7 +60,7 @@ public class SuperNodoAgent extends Agent {
         addBehaviour(myAMSSubscriber);
 
         catalogo = new Hashtable<String, Fichero>();
-        nodos = new Hashtable<AID, Cliente>();
+        nodos = new Hashtable<String, Cliente>();
 
         //  Se registra este nodo como SuperNodo
         DFAgentDescription dfd = new DFAgentDescription();
@@ -120,7 +124,8 @@ public class SuperNodoAgent extends Agent {
                 AID sender = msg.getSender();
                 client = new Cliente(sender, Integer.valueOf(msg.getContent()));
                 System.out.println("Registro nuevo cliente");
-                nodos.put(sender, client);// agrego el nodo a la tabla de hash
+		System.out.println("El sender es: "+sender);
+                nodos.put(sender.getName(), client);// agrego el nodo a la tabla de hash
 
                 //  Le enviamos la nueva Tabla de Hash de nodos a cada SuperNodo
                 for (int i = 0; i < superNodos.size(); i++) {
@@ -251,14 +256,23 @@ public class SuperNodoAgent extends Agent {
                         System.out.println("tiene permisos");
                         reply.addUserDefinedParameter("permisos", "true");
                         for (AID holder : fileData.getHolders()) {
-                            Cliente datosNodo = nodos.get(holder);
-                            if (datosNodo.getConfiabilidad() >= mejorHolder.getConfiabilidad()) {
+                            Cliente datosNodo = nodos.get(holder.getName());
+			    // Se busca aquel nodo que tenga mayor confiabilidad y aun este vivo
+                            if (datosNodo != null && datosNodo.getConfiabilidad() >= mejorHolder.getConfiabilidad()) {
                                 mejorHolder = datosNodo;
                             }
                         }
                         try {
-                            reply.addUserDefinedParameter("nombreArchivo", fileName);
-                            reply.setContentObject(mejorHolder.getClientAID());
+			    //Si el mejor holder no existe pues todos se cayeron se envia el mensaje de que el archivo
+                            // No esta disponible
+				System.out.println("El string"+mejorHolder.getClientAID());
+			    if(mejorHolder.getClientAID() == null){
+				System.out.println("No hay nodos vivos que tengan el archivo");
+				reply.setContent("not-available");
+			    }else{
+		                reply.addUserDefinedParameter("nombreArchivo", fileName);
+		                reply.setContentObject(mejorHolder.getClientAID());
+			    }
                         } catch (Exception io) {
                             io.printStackTrace();
                         }
@@ -481,7 +495,7 @@ public class SuperNodoAgent extends Agent {
                 try {
                     // En el mensaje se encuentra la tabla de Hash de nodos
                     // Esta sera nuestra nueva tabla de hash de nodos
-                    Hashtable<AID, Cliente> nuevosNodos = (Hashtable<AID, Cliente>) msg.getContentObject();
+                    Hashtable<String, Cliente> nuevosNodos = (Hashtable<String, Cliente>) msg.getContentObject();
                     nodos = nuevosNodos;
                     System.out.println("Tabla de Hash de NODOS Actualizada.");
                 } catch (Exception e) {
@@ -536,7 +550,7 @@ public class SuperNodoAgent extends Agent {
             r = null;
         }
 
-        for (AID key : nodos.keySet()) {
+        for (String key : nodos.keySet()) {
             Cliente cliaux = nodos.get(key);
 
             if (cliaux.getCapacidad() > tam) {
@@ -576,7 +590,7 @@ public class SuperNodoAgent extends Agent {
                     int confiabilidad = client.getConfiabilidad();
                     client.setConfiabilidad(confiabilidad++);
                     // Colocamos el cliente con la confiabilidad aumentada
-                    nodos.put(sender, client);
+                    nodos.put(sender.getName(), client);
 
                     // Actualizacion de tabla de hash de super Nodos
                     //  Le enviamos la nueva Tabla de Hash de nodos a cada SuperNodo
