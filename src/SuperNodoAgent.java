@@ -228,7 +228,7 @@ public class SuperNodoAgent extends Agent {
                     reply.setPerformative(ACLMessage.INFORM);
                     reply.setConversationId("holders");
                     try{
-                        reply.addUserDefinedParameter("nombreArchivo", fileName);
+                        reply.addUserDefinedParameter("nombreArchivo",fileName);
                         reply.setContentObject(mejorHolder.getClientAID());
                     } catch (Exception io) {
                         io.printStackTrace();
@@ -355,7 +355,7 @@ public class SuperNodoAgent extends Agent {
                         //Nuevo nodo con el archivo
                         arch  = (Fichero) msg.getContentObject();
                         arch2 = catalogo.get(arch.getNombre());
-                        arch2.setAHolder(arch.getOwner());
+                        arch2.setOwner(arch.getOwner());
                         catalogo.put(arch.getNombre(),arch2);
                     }
 
