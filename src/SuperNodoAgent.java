@@ -213,31 +213,35 @@ public class SuperNodoAgent extends Agent {
                 // Buscamos en el catalogo quien posee el archivo deseado por el cliente
                 Fichero fileData = catalogo.get(fileName);
 
+                reply.setPerformative(ACLMessage.INFORM);
+                reply.setConversationId("holders");
+
                 if (fileData != null) {
                     // En caso de que varios nodos posean el archivo, le enviamos
                     // como respuesta el nombre del nodo mas confiable que lo tenga
                     Cliente mejorHolder = new Cliente();
-    
-                    for (AID holder: fileData.getHolders()) {
-                        Cliente datosNodo = nodos.get(holder);
-                        if (datosNodo.getConfiabilidad() > mejorHolder.getConfiabilidad()) {
-                            mejorHolder = datosNodo;
+                    if(fileData.getPermisos()){
+                        System.out.println("tiene permisos");
+                        reply.addUserDefinedParameter("permisos", "true");
+                        for (AID holder: fileData.getHolders()) {
+                            Cliente datosNodo = nodos.get(holder);
+                            if (datosNodo.getConfiabilidad() >= mejorHolder.getConfiabilidad()) {
+                                mejorHolder = datosNodo;
+                            }
+                        }   
+                        try{
+                            reply.addUserDefinedParameter("nombreArchivo",fileName);
+                            reply.setContentObject(mejorHolder.getClientAID());
+                        } catch (Exception io) {
+                            io.printStackTrace();
                         }
-                    }   
-
-                    reply.setPerformative(ACLMessage.INFORM);
-                    reply.setConversationId("holders");
-                    try{
-                        reply.addUserDefinedParameter("nombreArchivo",fileName);
-                        reply.setContentObject(mejorHolder.getClientAID());
-                    } catch (Exception io) {
-                        io.printStackTrace();
+                    }else{
+                         reply.addUserDefinedParameter("permisos", "false");
                     }
 
                 }
                 else {
                     System.out.println("El archivo :"+fileName+" no existe");
-                    reply.setPerformative(ACLMessage.REFUSE);
                     reply.setContent("not-available");
                 }
                 myAgent.send(reply);
