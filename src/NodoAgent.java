@@ -215,9 +215,10 @@ public class NodoAgent extends Agent {
     }
 
     /**
-     * This is invoked by the GUI when the user adds a new file for upload
+     * Metodo llamado por la GUI cuando el usuario selecciona el boton subir
+     archivo
      */
-    public void upload(final String path) {
+    public void subirArchivo(final String path) {
         addBehaviour(new OneShotBehaviour() {
             public void action() {
                 MessageTemplate mt;

@@ -305,7 +305,7 @@ public class NodoAgentGUI extends javax.swing.JFrame {
         jButton1.setText("Subir");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                myAgent.upload(campoTextoRutaArchivo.getText());
+                myAgent.subirArchivo(campoTextoRutaArchivo.getText());
                 LabelCargadoExitosa.setVisible(true);
             }
         });
@@ -424,7 +424,7 @@ public class NodoAgentGUI extends javax.swing.JFrame {
                 .addGap(21, 21, 21))
         );
 
-        jTabbedPane1.addTab("Chat", jPanel3);
+        //jTabbedPane1.addTab("Chat", jPanel3);
 
         LabelSeleccioneArchivo.setText("Seleccione un archivo : ");
 
@@ -440,11 +440,12 @@ public class NodoAgentGUI extends javax.swing.JFrame {
         privado.setText("Privado");
 
         labelEstablecerP.setText("Establecer permisos: ");
+        labelEstablecerP.setVisible(false);
 
         btnPermisos.setText("Aceptar");
         btnPermisos.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnPermisosActionPerformed(evt);
+                
             }
         });
 
