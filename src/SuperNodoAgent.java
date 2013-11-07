@@ -681,5 +681,60 @@ public class SuperNodoAgent extends Agent {
             }
         }
     }
+
+    private class cambiarPermisos extends CyclicBehaviour {
+
+        MessageTemplate mt;
+        ACLMessage msg;
+
+        public void action() {
+            mt = MessageTemplate.and(
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                    MessageTemplate.MatchConversationId("cambiarPermisos"));
+            msg = myAgent.receive(mt);
+            Fichero f = new Fichero();
+            if (msg != null) {
+                // Mensaje recibido.
+                
+                String cliente = msg.getSender().getName();
+                try {
+                    f = (Fichero)msg.getContentObject();
+                } catch (Exception io) {
+                    io.printStackTrace();
+                }
+                
+                System.out.println(cliente+"Quiere cambiar permiso");
+
+                // Obtenemos el fichero del catalogo
+                Fichero file = catalogo.get(f.getNombre());
+                file.setPermisos(f.getPermisos());
+
+                //Actualizamos el catalogo
+                catalogo.put(f.getNombre(),file);
+
+                //  Le enviamos la nueva Tabla de Hash de nodos a cada SuperNodo
+                for (int i = 0; i < superNodos.size(); i++) {
+
+                    ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
+                    // Lo reenvio a los otros nodos distintos a mi
+                    if (superNodos.get(i)!=getAID()){
+                        cfp.addReceiver(superNodos.get(i));
+                        try {
+                            cfp.setContentObject(catalogo);
+                        } catch (Exception io) {
+                            io.printStackTrace();
+                        }
+
+                        cfp.setConversationId("actualizarCatalogo");
+                        myAgent.send(cfp); 
+                    }
+                    
+                }
+                
+            } else {
+                block();
+            }
+        }
+    }
     
 }

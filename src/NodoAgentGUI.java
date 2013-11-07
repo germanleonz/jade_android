@@ -61,6 +61,8 @@ public class NodoAgentGUI extends javax.swing.JFrame {
     private javax.swing.JRadioButton privado;
     private javax.swing.JRadioButton publico;
     private javax.swing.JTextArea textAreaChat;
+    private javax.swing.JButton btnRefresh;
+    private LinkedList<Fichero> p;
 
 
      public void visibleMensajeError(){
@@ -120,6 +122,7 @@ public class NodoAgentGUI extends javax.swing.JFrame {
         labelEstablecerP = new javax.swing.JLabel();
         btnPermisos = new javax.swing.JButton();
         LabelCambiosOk = new javax.swing.JLabel();
+        btnRefresh = new javax.swing.JButton();
 
                 grupoBotones.add(publico);
         grupoBotones.add(privado);
@@ -445,22 +448,54 @@ public class NodoAgentGUI extends javax.swing.JFrame {
         labelEstablecerP.setVisible(false);
 
         btnPermisos.setText("Aceptar");
-        btnPermisos.addActionListener(new java.awt.event.ActionListener() {
+         btnPermisos.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                LinkedList<Fichero> p = myAgent.getPublicaciones();
-                DefaultListModel modelo = new DefaultListModel();
-				Fichero f ;
-                for(int i=0;i<p.size();i++){
-                	f=p.get(i);
-                	modelo.addElement(f.getNombre()+" - "+f.getPermisos());
-                }
-                ListaMisArchivos.setModel(modelo);
-                jScrollPane3.setViewportView(ListaMisArchivos);
+                boolean permiso=false;
+               
+                if (publico.isSelected())
+                    permiso = true;
+               
+                myAgent.setPermisos((String)ListaMisArchivos.getSelectedValue(),permiso);
+                LabelCambiosOk.setVisible(true);
+               
             }
         });
          
 
         LabelCambiosOk.setText("Los cambios se han efectuado correctamente ");
+        LabelCambiosOk.setVisible(false);
+
+
+        btnRefresh.setText("Refresh");
+        btnRefresh.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p = myAgent.getPublicaciones();
+                LabelCambiosOk.setVisible(false);
+                DefaultListModel modelo = new DefaultListModel();
+                Fichero f ;
+                String permiso="";
+                for(int i=0;i<p.size();i++){
+                    f=p.get(i);
+                    permiso="privado";
+                    if(f.getPermisos()){
+                        permiso="publico";
+                    }
+                    modelo.addElement(f.getNombre());
+                }
+                ListaMisArchivos.setModel(modelo);
+                
+            }
+        });
+
+         ListaMisArchivos.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                ListaMisArchivosMouseClicked(evt);
+            }
+        });
+
+        jScrollPane3.setViewportView(ListaMisArchivos);
+
+      
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
@@ -479,8 +514,10 @@ public class NodoAgentGUI extends javax.swing.JFrame {
                     .addGroup(jPanel5Layout.createSequentialGroup()
                         .addComponent(LabelSeleccioneArchivo)
                         .addGap(18, 18, 18)
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(132, Short.MAX_VALUE))
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnRefresh)))
+                .addContainerGap(27, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(btnPermisos)
@@ -492,7 +529,8 @@ public class NodoAgentGUI extends javax.swing.JFrame {
                 .addGap(28, 28, 28)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(LabelSeleccioneArchivo))
+                    .addComponent(LabelSeleccioneArchivo)
+                    .addComponent(btnRefresh))
                 .addGap(38, 38, 38)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(publico)
@@ -500,7 +538,7 @@ public class NodoAgentGUI extends javax.swing.JFrame {
                     .addComponent(labelEstablecerP))
                 .addGap(60, 60, 60)
                 .addComponent(LabelCambiosOk)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 79, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 72, Short.MAX_VALUE)
                 .addComponent(btnPermisos)
                 .addGap(59, 59, 59))
         );
@@ -526,6 +564,20 @@ public class NodoAgentGUI extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+      private void ListaMisArchivosMouseClicked(java.awt.event.MouseEvent evt) {                                              
+            int pos = ListaMisArchivos.getSelectedIndex();
+            Fichero f = p.get(pos);
+            LabelCambiosOk.setText(Integer.toString(pos));
+            if (f.getPermisos()){
+               
+                publico.setSelected(true);
+                privado.setSelected(false);
+            }else{
+               publico.setSelected(false);
+                privado.setSelected(true);
+            }
+        } 
 
     private void campoTextoFileNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_campoTextoFileNameActionPerformed
         // TODO add your handling code here:

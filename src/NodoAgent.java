@@ -28,7 +28,7 @@ public class NodoAgent extends Agent {
     private NodoAgentGUI myGui;
     
     //LinkedList de mis archivos publicados
-    private LinkedList misPublicaciones;
+    private LinkedList<Fichero> misPublicaciones;
     
 
     protected void setup() {
@@ -253,7 +253,7 @@ public class NodoAgent extends Agent {
                 cfp.addReceiver(superNodos.get(0));
 
                 //Actualizamos nuestra propia tabla de archivos subidos
-                misPublicaciones.add(f.getNombre());
+                misPublicaciones.add(f);
 
                 //Copiamos el archivo a la carpeta de jade que creamos
                 FileInputStream is = null;
@@ -501,5 +501,43 @@ public class NodoAgent extends Agent {
     	return misPublicaciones;
     }
     
+
+    /*
+        Metodo llamado desde la GUI cuando el cliente desea cambiar
+        los permisos
+    */
+    public void setPermisos(final String nombreFichero,final boolean permiso) {
+        addBehaviour(new OneShotBehaviour() {
+            public void action() {
+                System.out.println("Deseo modificar permisos "+nombreFichero);
+                Fichero f = new Fichero();
+                f.setNombre(nombreFichero);
+                f.setPermisos(permiso);
+                ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+                msg.addReceiver(superNodos.get(0));
+                try {
+                    msg.setContentObject(f);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                
+                msg.setConversationId("cambiarPermisos");
+                myAgent.send(msg);
+
+                for(int i=0;i<misPublicaciones.size();i++){
+                    Fichero f1 = misPublicaciones.get(i);
+
+                    if (f1.getNombre().equals(nombreFichero)){
+                        f1.setPermisos(permiso);
+                        misPublicaciones.remove(i);
+                        misPublicaciones.add(f1);
+                        break;
+                    }
+
+                }
+
+            }
+        });
+    }
     
 }
