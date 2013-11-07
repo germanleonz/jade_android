@@ -252,6 +252,9 @@ public class NodoAgent extends Agent {
                 cfp = new ACLMessage(ACLMessage.REQUEST);
                 cfp.addReceiver(superNodos.get(0));
 
+                //Actualizamos nuestra propia tabla de archivos subidos
+                misPublicaciones.add(f.getNombre());
+
                 //Copiamos el archivo a la carpeta de jade que creamos
                 FileInputStream is = null;
                 FileOutputStream os = null;
@@ -353,6 +356,7 @@ public class NodoAgent extends Agent {
                     mensaje.setConversationId("descargaOK");
                     mensaje.addReceiver(superNodos.get(0));
                     mensaje.setContentObject(msg.getSender());
+
                     myAgent.send(mensaje);
                     System.out.println("Informamos a superNodo -> DescargaOK");
 

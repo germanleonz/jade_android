@@ -404,8 +404,8 @@ public class SuperNodoAgent extends Agent {
                     } else if (msg.getConversationId().equalsIgnoreCase("NuevaCapacidad")) {
                         int tamArch = Integer.parseInt(msg.getUserDefinedParameter("tamArch"));
                         AID nodo = (AID) msg.getContentObject();
-                        int capacidad = nodos.get(nodo).getCapacidad();
-                        nodos.get(nodo).setCapacidad(capacidad - tamArch);
+                        int capacidad = nodos.get(nodo.getName()).getCapacidad();
+                        nodos.get(nodo.getName()).setCapacidad(capacidad - tamArch);
                         System.out.println("Actualizando capacidad del nodo: " + nodo);
                     } else {
                         //Nuevo nodo con el archivo
@@ -586,8 +586,12 @@ public class SuperNodoAgent extends Agent {
                 try {
                     // En el mensaje se encuentra el cliente que envio el
                     // archivo y todo funciono bien
+                    System.out.println("Paso por aqui");
                     AID sender = (AID) msg.getContentObject();
-                    Cliente client = nodos.get(sender);
+                    Cliente client = nodos.get(sender.getName());
+                    if (client==null){
+                        System.out.println("ES NUL");
+                    }
                     int confiabilidad = client.getConfiabilidad();
                     client.setConfiabilidad(confiabilidad++);
                     // Colocamos el cliente con la confiabilidad aumentada
@@ -598,15 +602,19 @@ public class SuperNodoAgent extends Agent {
                     for (int i = 0; i < superNodos.size(); i++) {
 
                         ACLMessage cfp = new ACLMessage(ACLMessage.PROPAGATE);
-                        cfp.addReceiver(superNodos.get(i));
-                        try {
-                            cfp.setContentObject(nodos);
-                        } catch (Exception io) {
-                            io.printStackTrace();
-                        }
+                        // Lo reenvio a los otros nodos distintos a mi
+                        if (superNodos.get(i)!=getAID()){
+                            cfp.addReceiver(superNodos.get(i));
+                            try {
+                                cfp.setContentObject(nodos);
+                            } catch (Exception io) {
+                                io.printStackTrace();
+                            }
 
-                        cfp.setConversationId("actualizarNodos");
-                        myAgent.send(cfp);
+                            cfp.setConversationId("actualizarNodos");
+                            myAgent.send(cfp); 
+                        }
+                        
                     }
 
 
