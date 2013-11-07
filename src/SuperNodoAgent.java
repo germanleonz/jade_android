@@ -43,10 +43,10 @@ public class SuperNodoAgent extends Agent {
                         DeadAgent da = (DeadAgent) ev;
                         System.out.println("Nodo desaparecido " + da.getAgent().getName());
                         AID agente = da.getAgent();
-			/*System.out.println(nodos.toString());
+			System.out.println(nodos.toString());
 			System.out.println("--------------------------------");
 			System.out.println(agente);
-			System.out.println("Booleanos "+nodos.contains(agente.getName())+" Para el segundo "+superNodos.contains(agente));*/
+			System.out.println("Booleanos "+nodos.contains(agente.getName())+" Para el segundo "+superNodos.contains(agente));
                         if (nodos.contains(agente.getName())) {
                             nodos.remove(agente);
                         } else if (superNodos.contains(agente)) {
@@ -88,6 +88,7 @@ public class SuperNodoAgent extends Agent {
         addBehaviour(new Registro());
         addBehaviour(new ActualizarConfiabilidad());
         addBehaviour(new AskPublicaciones());
+        addBehaviour(new cambiarPermisos());
     }
 
     /*
@@ -247,6 +248,7 @@ public class SuperNodoAgent extends Agent {
                 Fichero fileData = catalogo.get(fileName);
 
                 reply.setPerformative(ACLMessage.INFORM);
+                reply.setContent("");
                 reply.setConversationId("holders");
 
                 if (fileData != null) {
@@ -278,6 +280,7 @@ public class SuperNodoAgent extends Agent {
                             io.printStackTrace();
                         }
                     } else {
+                        System.out.println("No tiene permisos");
                         reply.addUserDefinedParameter("permisos", "false");
                     }
 

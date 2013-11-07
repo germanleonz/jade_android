@@ -96,18 +96,6 @@ public class NodoAgent extends Agent {
         System.out.println("Nodo-agent " + getAID().getName() + " terminating.");
     }
 
-    //Funcion privada que revisa si los nodos aun estan activos
-    //No esta funcionando 
-    private void getSuperNode() throws Exception {
-        Object cc = getContainerController().getPlatformController();
-        System.out.println(cc);
-        for (int i = 0; i < superNodos.size(); ++i) {
-            //System.out.println(this.superNodos[i].getLocalName());
-            //System.out.println(cc.getAgent(this.superNodos[i].getLocalName()));
-            //System.out.println("El HAP"+this.superNodos[i].getHap());
-        }
-    }
-
     /**
      * Este behaviour se encarga de encontrar a todos los supernodos y de
      * notificarle mi nacimiento al primero de la lista
