@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Hashtable;
+import java.util.Set;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -43,12 +44,9 @@ public class SuperNodoAgent extends Agent {
                         DeadAgent da = (DeadAgent) ev;
                         System.out.println("Nodo desaparecido " + da.getAgent().getName());
                         AID agente = da.getAgent();
-			System.out.println(nodos.toString());
-			System.out.println("--------------------------------");
-			System.out.println(agente);
-			System.out.println("Booleanos "+nodos.contains(agente.getName())+" Para el segundo "+superNodos.contains(agente));
-                        if (nodos.contains(agente.getName())) {
-                            nodos.remove(agente);
+                        if (nodos.containsKey(agente.getName())) {
+                            nodos.remove(agente.getName());
+                            System.out.println("Removido el agente "+agente.getName());
                         } else if (superNodos.contains(agente)) {
                             superNodos.remove(agente);
                         }
