@@ -1,0 +1,56 @@
+ Universidad Simón Bolívar
+ Departamento de Computación y Tecnología de la Información
+ CI-4822 - Sistemas de Operación II
+
+ PROYECTO - P2P Jade 
+
+ Integrantes
+ Krysler Pinto      09-10661
+ Gustavo Ortega     09-10590
+ Germán León        08-10611
+ Javier Argüello    09-10047
+
+Arquitectura del Proyecto
+
+ -- Super Nodos: Entes encargados de mantener el catálogo de los archivos que se han subido y de quienes tienen cada uno de los archivos. También se encargan de registrar los nodos clientes que se unen al sistema. Reciben las peticiones de los clientes sobre ¿Quién posee un archivo en particular? y ellos responden con el nodo cliente más confiable (Aquel con mas envios satisfactorios) . Sin embargo, si al hacer el lookup en el catálogo , no encuentran coincidencias envían un aviso indicándole al nodo solicitante que no es posible resolver a su requerimiento. Cabe destacar que el super nodo al recibir una solicitud de un archivo, en caso de tener permisos privados le indica al nodo solicitante lo ocurrido y no le envia aquellos que poseen el archivo. 
+
+ Los super nodos tienen la responsabilidad además de mantener actualizados a los otros super nodos en cuanto a la confiabilidad de los nodos y del catálogo de archivos. Para ello, en cada solicitud que modifique alguna de estas dos tablas, envía a todos los super nodos la tabla correspondiente con la modificación realizada, para que éstos la actualicen. 
+
+ Los super nodos al recibir un mensaje de algún nodo cliente indicando una descarga satisfactoria o una descarga inconclusa, se encarga de aumentar o disminuir correspondientemente, la confiabilidad del nodo que envió (o intentó enviar) el archivo. 
+
+ Los super nodos al recibir un mensaje de nuevo archivo lo registran en su catalogo y replican el archivo entre los nodos agentes que tenga espacio suficiente para almacenar el archivo
+
+ -- Nodos Agentes: Entes encargados de la transmisión, descarga y subida de archivo en la red. Estos entes son los que tiene interacción directa con el usuario a través de un interfaz de usuario sencilla. 
+
+ Entre las diferentes funcionalidades que tiene el nodo agente se pueden mencionar, que al levantarse el nodo agente, este le pide a algún super nodo los archivos por lo cual es el dueño, si tiene alguno. Para solicitar un archivo de descarga este envía el nombre del archivo introducido por el usuario al super nodo, este al esperar por la respuesta despliega un mensaje en la interfaz de usuario con la respuesta del mensaje recibido del super nodo, si el mensaje recibido por el super nodo es el usuario con el archivo solicitado, se inicia la comunicación entre estos Agentes para iniciar la descarga y ante cualquier eventualidad de notifica al super nodo.
+
+ Al querer cambiar los permisos sobre algún archivo, se envía la actualización del cambio de permiso a un super nodo para que este lo replique entre los demas super nodos. Al querer subir un archivo se especifica el path donde esta el archivo para luego ser copiado en la carpeta donde el nodo agente mantiene los archivos.
+
+--
+Archivos que conforman este Proyecto
+
+Cliente.java
+Fichero.java
+NodoAgent.java
+NodoAgentGUI.java
+SuperNodoAgent.java
+jade/
+jade/lib/
+jade/lib/jade.jar
+
+ Como correr el proyecto:
+
+1. Iniciar la plataforma en el host1
+
+ $java -cp jade/lib/jade.jar jade.Boot -gui
+
+2. Iniciar un Super Nodo 
+
+ $java -cp jade/lib/jade.jar:. jade.Boot -container -host host1 -agents <SuperNodo1>:SuperNodoAgent
+
+3. Iniciar un nodo
+
+ $java -cp jade/lib/jade.jar:. jade.Boot -container -host host1 -agents '<Nodo1>:NodoAgent(<Capacidad>)'
+
+
+
