@@ -52,5 +52,12 @@ jade/lib/jade.jar
 
  $java -cp jade/lib/jade.jar:. jade.Boot -container -host host1 -agents '<Nodo1>:NodoAgent(<Capacidad>)'
 
+Donde:
+ host1 puede ser tanto la direccion IP del host o el nombre si se cuenta con un DNS
 
+ <SuperNodo1> nombre que se puede otorgar al supernodo
+
+ <Nodo1> nombre que se puede otorgar a un nodo agente
+
+ <Capacidad> capacidad que dispone el nodo para guardar replicas, el tamaño en este campo representa el numero de bytes a guardar
 
