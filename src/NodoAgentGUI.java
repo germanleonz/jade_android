@@ -10,6 +10,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.DefaultListModel;
 import java.util.LinkedList;
+import javax.swing.JOptionPane;
 
 
 /**
@@ -311,7 +312,8 @@ public class NodoAgentGUI extends javax.swing.JFrame {
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 myAgent.subirArchivo(campoTextoRutaArchivo.getText());
-                LabelCargadoExitosa.setVisible(true);
+                //LabelCargadoExitosa.setVisible(true);
+                JOptionPane.showMessageDialog(NodoAgentGUI.this, "Archivo :"+campoTextoRutaArchivo.getText()+" subido exitosamente ");
             }
         });
 
@@ -451,12 +453,18 @@ public class NodoAgentGUI extends javax.swing.JFrame {
          btnPermisos.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 boolean permiso=false;
+                String per = "privado";
                
-                if (publico.isSelected())
-                    permiso = true;
+                if (publico.isSelected()){
+                   permiso = true;
+                   per = "publico";
+                }
+                    
                
-                myAgent.setPermisos((String)ListaMisArchivos.getSelectedValue(),permiso);
-                LabelCambiosOk.setVisible(true);
+                String nombreArch = (String)ListaMisArchivos.getSelectedValue();
+                myAgent.setPermisos(nombreArch,permiso);
+                JOptionPane.showMessageDialog(NodoAgentGUI.this, "Se han cambiado los permisos del archivo :"+nombreArch+" a "+per);
+                
                
             }
         });
@@ -495,7 +503,6 @@ public class NodoAgentGUI extends javax.swing.JFrame {
 
         jScrollPane3.setViewportView(ListaMisArchivos);
 
-      
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
@@ -504,41 +511,43 @@ public class NodoAgentGUI extends javax.swing.JFrame {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addGap(23, 23, 23)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(LabelCambiosOk)
                     .addGroup(jPanel5Layout.createSequentialGroup()
-                        .addComponent(labelEstablecerP)
-                        .addGap(18, 18, 18)
-                        .addComponent(publico)
-                        .addGap(90, 90, 90)
-                        .addComponent(privado, javax.swing.GroupLayout.PREFERRED_SIZE, 153, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(btnPermisos)
+                        .addGap(61, 61, 61))
                     .addGroup(jPanel5Layout.createSequentialGroup()
                         .addComponent(LabelSeleccioneArchivo)
                         .addGap(18, 18, 18)
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnRefresh)))
-                .addContainerGap(27, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btnPermisos)
-                .addGap(61, 61, 61))
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 295, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnRefresh)
+                        .addContainerGap(30, Short.MAX_VALUE))))
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addGap(32, 32, 32)
+                .addComponent(labelEstablecerP)
+                .addGap(18, 18, 18)
+                .addComponent(publico)
+                .addGap(90, 90, 90)
+                .addComponent(privado, javax.swing.GroupLayout.PREFERRED_SIZE, 153, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addGap(28, 28, 28)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(LabelSeleccioneArchivo)
-                    .addComponent(btnRefresh))
-                .addGap(38, 38, 38)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 184, Short.MAX_VALUE)
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(LabelSeleccioneArchivo)
+                            .addComponent(btnRefresh))
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addGap(18, 18, 18)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(publico)
                     .addComponent(privado)
                     .addComponent(labelEstablecerP))
-                .addGap(60, 60, 60)
-                .addComponent(LabelCambiosOk)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 72, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
                 .addComponent(btnPermisos)
                 .addGap(59, 59, 59))
         );
